@@ -9,8 +9,9 @@
   "item",
   "operation",
   "column_break_dymp",
+  "effective_from",
   "rate",
-  "effective_from"
+  "remarks"
  ],
  "fields": [
   {
@@ -48,12 +49,17 @@
    "in_list_view": 1,
    "label": "Effective From",
    "reqd": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-03 13:43:00.225123",
+ "modified": "2026-06-03 17:18:33.695781",
  "modified_by": "Administrator",
  "module": "Ec Production",
  "name": "EC Item Operation Rate",

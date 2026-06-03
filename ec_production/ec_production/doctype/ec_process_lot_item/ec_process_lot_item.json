@@ -11,7 +11,8 @@
   "operation",
   "rate",
   "qty",
-  "amount"
+  "amount",
+  "remarks"
  ],
  "fields": [
   {
@@ -62,13 +63,18 @@
    "fieldtype": "Currency",
    "label": "Amount",
    "read_only": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-06-03 15:15:21.792055",
+ "modified": "2026-06-03 17:23:06.347345",
  "modified_by": "Administrator",
  "module": "Ec Production",
  "name": "EC Process Lot Item",
