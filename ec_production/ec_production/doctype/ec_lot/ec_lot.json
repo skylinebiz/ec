@@ -10,7 +10,9 @@
   "section_break_sehp",
   "ec_lot_item",
   "section_break_yari",
-  "total_qty"
+  "total_qty",
+  "column_break_ibyx",
+  "remarks"
  ],
  "fields": [
   {
@@ -41,12 +43,21 @@
    "in_list_view": 1,
    "label": "Total Qty",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ibyx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-03 14:08:40.652888",
+ "modified": "2026-06-03 18:10:37.534437",
  "modified_by": "Administrator",
  "module": "Ec Production",
  "name": "EC Lot",

@@ -12,7 +12,8 @@
   "section_break_kilx",
   "total_qty",
   "column_break_zyai",
-  "total_amount"
+  "total_amount",
+  "remarks"
  ],
  "fields": [
   {
@@ -54,12 +55,17 @@
    "in_list_view": 1,
    "label": "Total Amount",
    "read_only": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-03 13:48:46.501469",
+ "modified": "2026-06-03 18:11:09.498471",
  "modified_by": "Administrator",
  "module": "Ec Production",
  "name": "EC Process Lot",
