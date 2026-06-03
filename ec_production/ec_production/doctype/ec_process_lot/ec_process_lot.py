@@ -10,6 +10,10 @@ from frappe import _
 class ECProcessLot(Document):
 	def validate(self):
 
+		# for row in self.lot_items:
+		# 	row.process_lot_date = self.date
+
+
 		self.total_qty = 0
 		self.total_amount = 0
 
