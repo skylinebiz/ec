@@ -14,7 +14,7 @@ app_license = "mit"
 # add_to_apps_screen = [
 # 	{
 # 		"name": "ec_production",
-# 		"logo": "/assets/ec_production/logo.png",
+# 		"logo": "/assets/ec_production/ec_logo.png",
 # 		"title": "Ec Production",
 # 		"route": "/ec_production",
 # 		"has_permission": "ec_production.api.permission.has_app_permission"
