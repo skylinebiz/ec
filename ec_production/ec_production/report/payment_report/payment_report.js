@@ -7,15 +7,43 @@ frappe.query_reports["Payment Report"] = {
             fieldname: "from_date",
             label: __("From"),
             fieldtype: "Date",
-            reqd: 1,
-            default: frappe.datetime.month_start()
+            reqd: 1
         },
         {
             fieldname: "to_date",
             label: __("To"),
             fieldtype: "Date",
-            reqd: 1,
-            default: frappe.datetime.month_end()
+            reqd: 1
         }
-    ]
+    ],
+
+    formatter(value, row, column, data, default_formatter) {
+        value = default_formatter(value, row, column, data);
+
+        if (column.fieldname === "employee" && data) {
+            return `
+                <a href="#" onclick="open_voucher_report(
+                    '${data.employee_id}',
+                    '${frappe.query_report.get_filter_value('from_date')}',
+                    '${frappe.query_report.get_filter_value('to_date')}'
+                )">
+                    ${value}
+                </a>
+            `;
+        }
+
+        return value;
+    }
+};
+
+window.open_voucher_report = function(employee, from_date, to_date) {
+    frappe.set_route(
+        "query-report",
+        "Voucher Report",
+        {
+            employee: employee,
+            from_date: from_date,
+            to_date: to_date
+        }
+    );
 };

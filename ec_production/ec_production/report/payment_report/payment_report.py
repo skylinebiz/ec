@@ -16,11 +16,17 @@ def execute(filters=None):
 
 def get_columns():
     return [
+        # {
+        #     "label": _("Employee ID"),
+        #     "fieldname": "employee_id",
+        #     "fieldtype": "Link",
+        #     "options": "Employee",
+        #     "width": 250,
+        # },
         {
             "label": _("Employee"),
             "fieldname": "employee",
-            "fieldtype": "Link",
-            "options": "Employee",
+            "fieldtype": "Data",
             "width": 250,
         },
         {
@@ -81,7 +87,8 @@ def get_data(filters):
 
     for employee, total in sorted(employee_totals.items()):
         data.append({
-            "employee": employee_names.get(employee, employee),
+            "employee": f"{employee}: {employee_names.get(employee, '')}",
+            "employee_id": employee,
             "final_amount": total
         })
 
