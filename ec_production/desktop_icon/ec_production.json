@@ -9,10 +9,10 @@
  "icon_type": "Link",
  "idx": 0,
  "label": "EC Production",
- "link_to": "EC Prod",
+ "link_to": "EC Production",
  "link_type": "Workspace Sidebar",
  "logo_url": "/assets/ec_production/ec_logo_icon.png",
- "modified": "2026-06-04 15:43:49.664942",
+ "modified": "2026-06-04 17:58:57.395390",
  "modified_by": "Administrator",
  "name": "EC Production",
  "owner": "Administrator",
@@ -23,6 +23,6 @@
    "role": "Administrator"
   }
  ],
- "sidebar": "EC Prod",
+ "sidebar": "EC Production",
  "standard": 1
 }
