@@ -24,10 +24,11 @@ frappe.query_reports["Payment Report"] = {
 
         if (column.fieldname === "employee" && data) {
             return `
-                <a href="#" onclick="open_voucher_report(
-                    '${data.employee_id}',
-                    '${frappe.query_report.get_filter_value('from_date')}',
-                    '${frappe.query_report.get_filter_value('to_date')}'
+                <a href="javascript:void(0)"
+                onclick="open_voucher_report(
+                        '${data.employee_id}',
+                        '${frappe.query_report.get_filter_value('from_date')}',
+                        '${frappe.query_report.get_filter_value('to_date')}'
                 )">
                     ${value}
                 </a>
@@ -38,14 +39,13 @@ frappe.query_reports["Payment Report"] = {
     }
 };
 
-window.open_voucher_report = function(employee, from_date, to_date) {
-    frappe.set_route(
-        "query-report",
-        "Voucher Report",
-        {
-            employee: employee,
-            from_date: from_date,
-            to_date: to_date
-        }
-    );
+window.open_voucher_report = function (employee, from_date, to_date) {
+
+    frappe.route_options = {
+        employee: employee,
+        from_date: from_date,
+        to_date: to_date
+    };
+
+    frappe.set_route("query-report", "Voucher Report");
 };

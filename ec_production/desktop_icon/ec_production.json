@@ -5,19 +5,24 @@
  "docstatus": 0,
  "doctype": "Desktop Icon",
  "hidden": 0,
+ "icon_image": "",
  "icon_type": "Link",
  "idx": 0,
  "label": "EC Production",
  "link_to": "EC Prod",
  "link_type": "Workspace Sidebar",
- "logo_url": "/files/ec_logo.png",
- "modified": "2026-06-03 16:30:17.803374",
+ "logo_url": "/assets/ec_production/ec_logo.png",
+ "modified": "2026-06-04 14:47:56.691077",
  "modified_by": "Administrator",
  "name": "EC Production",
  "owner": "Administrator",
  "parent_icon": "",
  "restrict_removal": 0,
- "roles": [],
+ "roles": [
+  {
+   "role": "Administrator"
+  }
+ ],
  "sidebar": "EC Prod",
  "standard": 1
 }
