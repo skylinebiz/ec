@@ -55,9 +55,11 @@ def execute(filters=None):
         conditions.append("pl.date <= %(to_date)s")
         values["to_date"] = filters.get("to_date")
 
-    if filters.get("employee"):
-        conditions.append("pli.employee = %(employee)s")
-        values["employee"] = filters.get("employee")
+    employees = filters.get("employee") or []
+
+    if employees:
+        conditions.append("emp.name IN %(employees)s")
+        values["employees"] = tuple(employees)
 
     where_clause = ""
     if conditions:
