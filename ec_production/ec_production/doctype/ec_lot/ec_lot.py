@@ -10,51 +10,62 @@ from frappe import _
 class ECLot(Document):
 
 	def validate(self):
+		self.set_rates()
+		self.validate_used_qty()
+		self.calculate_totals()
 
-		if self.is_new():
-			return
-
-		old_doc = self.get_doc_before_save()
-		if not old_doc:
-			return
-
-		if old_doc.ec_lot_item != self.ec_lot_item:
-			submitted_lots = frappe.get_all(
-				"EC Process Lot",
-				filters={"docstatus": 1},
-				pluck="name"
-			)
-
-			if submitted_lots:
-				process_lot = frappe.db.get_value(
-					"EC Process Lot Item",
-					{
-						"ec_lot": self.name,
-						"parent": ["in", submitted_lots]
-					},
-					"parent"
-				)
-
-				if process_lot:
-					frappe.throw(
-						_(
-							"Submitted Process Lot <a href='/app/ec-process-lot/{0}'>{0}</a> "
-							"exists against this EC Lot. Cancel the Process Lot before modifying this Lot."
-						).format(process_lot)
-					)
-				
-			self.total_qty = sum(
-				flt(row.qty)
-				for row in self.ec_lot_item
-			)
-
+	def set_rates(self):
 		for row in self.ec_lot_item:
-
 			if row.item and row.operation and row.date and not row.rate:
 				row.rate = get_rate(
 					row.item,
 					row.operation,
 					row.date
+				)
+
+	def calculate_totals(self):
+		self.total_qty = sum(
+			flt(row.qty)
+			for row in self.ec_lot_item
+		)
+
+	def validate_used_qty(self):
+		"""
+		If this lot has already been used in any Process Lot
+		(draft/submitted/cancelled), do not allow reducing qty
+		below the quantity already consumed.
+		"""
+
+		if self.is_new():
+			return
+
+		for row in self.ec_lot_item:
+
+			used_qty = frappe.db.sql("""
+				SELECT COALESCE(SUM(qty), 0)
+				FROM `tabEC Process Lot Item`
+				WHERE ec_lot = %s
+				  AND item = %s
+				  AND operation = %s
+			""", (
+				self.name,
+				row.item,
+				row.operation
+			))[0][0] or 0
+
+			if flt(row.qty) < flt(used_qty):
+				frappe.throw(
+					_(
+						"Cannot reduce Qty for Item <b>{item}</b> ({operation}).<br><br>"
+						"Qty in EC Lot: <b>{lot_qty}</b><br>"
+						"Qty already used in Process Lots: <b>{used_qty}</b><br><br>"
+						"Qty must be at least <b>{used_qty}</b>."
+					).format(
+						item=row.item,
+						operation=row.operation,
+						lot_qty=row.qty,
+						used_qty=used_qty
+					)
 				)
 
 
