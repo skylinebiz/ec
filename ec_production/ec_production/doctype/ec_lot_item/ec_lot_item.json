@@ -25,6 +25,7 @@
   {
    "fieldname": "qty",
    "fieldtype": "Float",
+   "in_list_view": 1,
    "label": "Qty",
    "non_negative": 1
   },
@@ -40,6 +41,7 @@
    "fetch_from": "ec_item_operation.rate",
    "fieldname": "rate",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Rate"
   },
   {
@@ -53,6 +55,7 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
+   "in_list_view": 1,
    "label": "Remarks"
   }
  ],
@@ -60,7 +63,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-06-03 17:19:01.207677",
+ "modified": "2026-06-05 17:06:41.919184",
  "modified_by": "Administrator",
  "module": "Ec Production",
  "name": "EC Lot Item",
