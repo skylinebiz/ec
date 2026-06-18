@@ -65,13 +65,19 @@ function open_style_creator() {
                 fieldtype: "Column Break"
             },
 
+            // {
+            //     fieldname: "colour",
+            //     label: "Colour",
+            //     fieldtype: "Autocomplete",
+            //     options: [],
+            // },
+
             {
                 fieldname: "colour",
                 label: "Colour",
-                fieldtype: "Autocomplete",
-                options: [],
+                fieldtype: "Data",
             },
-
+            
             {
                 fieldname: "colour_code",
                 label: "Colour Code",
@@ -253,12 +259,12 @@ function open_style_creator() {
 
     load_colours(d);
 
-    d.fields_dict.style_no.$input.on(
-        "click",
-        async () => {
-            await load_next_style_no(d);
-        }
-    );
+    // d.fields_dict.style_no.$input.on(
+    //     "click",
+    //     async () => {
+    //         await load_next_style_no(d);
+    //     }
+    // );
 
     d.fields_dict.add_rows.$input.on("click", () => {
 
