@@ -21,335 +21,6 @@ def get_attribute_values(attribute):
     ]
 
 
-
-# @frappe.whitelist()
-# def create_style(
-#     style_name,
-#     attribute_1,
-#     attribute_1_values,
-#     attribute_2=None,
-#     attribute_2_values=None,
-#     mrp=None,
-#     wsp=None,
-# ):
-
-#     # -------------------------
-#     # Parse MultiCheck values
-#     # -------------------------
-
-#     if isinstance(attribute_1_values, str):
-#         attribute_1_values = frappe.parse_json(attribute_1_values)
-
-#     if isinstance(attribute_2_values, str):
-#         attribute_2_values = frappe.parse_json(attribute_2_values)
-
-#     # MultiCheck may return dict
-#     if isinstance(attribute_1_values, dict):
-#         attribute_1_values = [
-#             k for k, v in attribute_1_values.items()
-#             if v
-#         ]
-
-#     if isinstance(attribute_2_values, dict):
-#         attribute_2_values = [
-#             k for k, v in attribute_2_values.items()
-#             if v
-#         ]
-
-#     if not attribute_1_values:
-#         frappe.throw(_("Please select values for {0}").format(attribute_1))
-
-#     # -------------------------
-#     # Create Template
-#     # -------------------------
-
-#     if frappe.db.exists("Item", style_name):
-
-#         template = frappe.get_doc(
-#             "Item",
-#             style_name,
-#         )
-
-#     else:
-
-#         attributes = [
-#             {
-#                 "attribute": attribute_1
-#             }
-#         ]
-
-#         if attribute_2:
-#             attributes.append(
-#                 {
-#                     "attribute": attribute_2
-#                 }
-#             )
-
-#         template = frappe.get_doc(
-#             {
-#                 "doctype": "Item",
-#                 "item_code": style_name,
-#                 "item_name": style_name,
-#                 "item_group": "EC Items",
-#                 "stock_uom": "Nos",
-#                 "has_variants": 1,
-#                 "is_stock_item": 1,
-#                 "attributes": attributes,
-#             }
-#         )
-
-#         template.insert(ignore_permissions=True)
-
-#     # -------------------------
-#     # Update Attributes
-#     # -------------------------
-
-#     existing_attrs = {
-#         d.attribute
-#         for d in template.attributes
-#     }
-
-#     changed = False
-
-#     if attribute_1 not in existing_attrs:
-
-#         template.append(
-#             "attributes",
-#             {
-#                 "attribute": attribute_1
-#             }
-#         )
-
-#         changed = True
-
-#     if (
-#         attribute_2
-#         and attribute_2 not in existing_attrs
-#     ):
-
-#         template.append(
-#             "attributes",
-#             {
-#                 "attribute": attribute_2
-#             }
-#         )
-
-#         changed = True
-
-#     if changed:
-#         template.save(ignore_permissions=True)
-
-#     # -------------------------
-#     # Generate Variants
-#     # -------------------------
-
-#     created = []
-
-#     if attribute_2 and attribute_2_values:
-
-#         for value1, value2 in product(
-#             attribute_1_values,
-#             attribute_2_values,
-#         ):
-
-#             variant_attributes = {
-#                 attribute_1: value1,
-#                 attribute_2: value2,
-#             }
-
-#             variant = get_or_create_variant(
-#                 template.name,
-#                 variant_attributes,
-#             )
-
-#             update_price(
-#                 variant,
-#                 "MRP",
-#                 mrp,
-#             )
-
-#             update_price(
-#                 variant,
-#                 "WSP",
-#                 wsp,
-#             )
-
-#             created.append(variant)
-
-#     else:
-
-#         for value1 in attribute_1_values:
-
-#             variant_attributes = {
-#                 attribute_1: value1
-#             }
-
-#             variant = get_or_create_variant(
-#                 template.name,
-#                 variant_attributes,
-#             )
-
-#             update_price(
-#                 variant,
-#                 "MRP",
-#                 mrp,
-#             )
-
-#             update_price(
-#                 variant,
-#                 "WSP",
-#                 wsp,
-#             )
-
-#             created.append(variant)
-
-#     frappe.db.commit()
-
-#     return {
-#         "template": template.name,
-#         "variants": created,
-#         "count": len(created),
-#     }
-
-
-# def get_or_create_variant(template, attributes):
-
-#     frappe.logger().info(
-#         f"CHECKING VARIANT template={template}"
-#     )
-
-#     variants = frappe.get_all(
-#         "Item",
-#         filters={"variant_of": template},
-#         pluck="name",
-#     )
-
-#     frappe.logger().info(
-#         f"EXISTING VARIANTS={variants}"
-#     )
-
-#     for variant_name in variants:
-
-#         rows = frappe.get_all(
-#             "Item Variant Attribute",
-#             filters={"parent": variant_name},
-#             fields=["attribute", "attribute_value"],
-#         )
-
-#         existing = {
-#             row.attribute: row.attribute_value
-#             for row in rows
-#         }
-
-#         frappe.logger().info(
-#             f"VARIANT={variant_name} ATTRS={existing}"
-#         )
-
-#         if existing == attributes:
-
-#             frappe.logger().info(
-#                 f"FOUND EXISTING={variant_name}"
-#             )
-
-#             return variant_name
-
-#     frappe.logger().info(
-#         f"CREATING NEW VARIANT={attributes}"
-#     )
-
-#     variant_doc = create_variant(
-#         template,
-#         attributes,
-#     )
-
-#     frappe.logger().info(
-#         f"CREATE_VARIANT RESULT={variant_doc}"
-#     )
-
-#     frappe.logger().info(
-#         f"TYPE={type(variant_doc)}"
-#     )
-
-#     if hasattr(variant_doc, "name"):
-#         frappe.logger().info(
-#             f"NAME={variant_doc.name}"
-#         )
-
-#     if hasattr(variant_doc, "is_new"):
-#         frappe.logger().info(
-#             f"IS_NEW={variant_doc.is_new()}"
-#         )
-
-#     if hasattr(variant_doc, "as_dict"):
-#         frappe.logger().info(
-#             f"DOC={variant_doc.as_dict()}"
-#         )
-
-#     try:
-
-#         variant_doc.insert(
-#             ignore_permissions=True
-#         )
-
-#         frappe.logger().info(
-#             f"INSERTED={variant_doc.name}"
-#         )
-
-#         return variant_doc.name
-
-#     except Exception:
-
-#         frappe.logger().error(
-#             frappe.get_traceback()
-#         )
-
-#         raise
-
-
-# def update_price(
-#     item_code,
-#     price_list,
-#     rate,
-# ):
-
-#     if not rate:
-#         return
-
-#     existing = frappe.db.get_value(
-#         "Item Price",
-#         {
-#             "item_code": item_code,
-#             "price_list": price_list,
-#         },
-#     )
-
-#     if existing:
-
-#         doc = frappe.get_doc(
-#             "Item Price",
-#             existing,
-#         )
-
-#         doc.price_list_rate = rate
-
-#         doc.save(
-#             ignore_permissions=True
-#         )
-
-#     else:
-
-#         frappe.get_doc(
-#             {
-#                 "doctype": "Item Price",
-#                 "item_code": item_code,
-#                 "price_list": price_list,
-#                 "price_list_rate": rate,
-#             }
-#         ).insert(
-#             ignore_permissions=True
-#         )
-
-
 @frappe.whitelist()
 def get_attribute_values(attribute):
 
@@ -399,9 +70,7 @@ def create_style(item_group, style_no, rows):
     if not rows:
         frappe.throw(_("No rows found"))
 
-    # --------------------------------
     # Create Template
-    # --------------------------------
 
     template_name = style_no
 
@@ -417,8 +86,8 @@ def create_style(item_group, style_no, rows):
             "is_stock_item": 1,
             "attributes": [
                 {"attribute": "Colour"},
-                {"attribute": "Size"},
                 {"attribute": "Colour Code"},
+                {"attribute": "Size"},
             ]
         })
 
@@ -431,17 +100,15 @@ def create_style(item_group, style_no, rows):
             template_name
         )
 
-    # --------------------------------
     # Create Variants
-    # --------------------------------
 
     created = []
 
     for row in rows:
 
         colour = str(row["colour_name"]).strip()
-        size = str(row["size"]).strip()
         colour_code = str(row["colour_code"]).strip()
+        size = str(row["size"]).strip()
 
         # Create missing attribute values automatically
 
@@ -462,18 +129,14 @@ def create_style(item_group, style_no, rows):
 
         attributes = {
             "Colour": colour,
-            "Size": size,
             "Colour Code": colour_code,
+            "Size": size,
         }
 
         variant = get_or_create_variant(
             template.name,
             attributes
         )
-
-        # Optional: store colour code on variant item
-        # item = frappe.get_doc("Item", variant)
-        # item.db_set("colour_code", colour_code)
 
         update_price(
             variant,
@@ -497,14 +160,6 @@ def create_style(item_group, style_no, rows):
     }
 
 def get_or_create_variant(template, attributes):
-
-    frappe.logger("item").info(
-        f"Template = {template}"
-    )
-
-    frappe.logger("item").info(
-        f"Attributes = {attributes}"
-    )
 
     variants = frappe.get_all(
         "Item",
@@ -623,3 +278,119 @@ def update_price(item_code, price_list, rate):
             "price_list_rate": rate
         }).insert(ignore_permissions=True)
 
+
+@frappe.whitelist()
+def search_items(
+    style_no=None,
+    colour=None,
+    colour_code=None,
+    size=None,
+    mrp=None,
+    wsp=None,
+    group_name=None,
+):
+    item_filters = []
+
+    if style_no:
+        item_filters.append(
+            ["Item", "item_name", "like", f"%{style_no}%"]
+        )
+
+    if group_name:
+        item_filters.append(
+            ["Item", "item_group", "like", f"%{group_name}%"]
+        )
+
+    items = frappe.get_all(
+        "Item",
+         filters=[*item_filters,["Item", "has_variants", "=", 0]],
+        fields=[
+            "name",
+            "item_name",
+            "item_group",
+        ],
+        limit_page_length=500,
+    )
+
+    result = []
+
+    for item in items:
+
+        attributes = {
+            d.attribute: d.attribute_value
+            for d in frappe.get_all(
+                "Item Variant Attribute",
+                filters={"parent": item.name},
+                fields=["attribute", "attribute_value"],
+            )
+        }
+
+        item_colour = attributes.get("Colour")
+        item_colour_code = attributes.get("Colour Code")
+        item_size = attributes.get("Size")
+
+        if colour and colour.lower() not in (item_colour or "").lower():
+            continue
+
+        if colour_code and colour_code.lower() not in (item_colour_code or "").lower():
+            continue
+
+        if size and size.lower() not in (item_size or "").lower():
+            continue
+
+        mrp_price = frappe.db.get_value(
+            "Item Price",
+            {
+                "item_code": item.name,
+                "price_list": "MRP",
+            },
+            "price_list_rate",
+        )
+
+        wsp_price = frappe.db.get_value(
+            "Item Price",
+            {
+                "item_code": item.name,
+                "price_list": "WSP",
+            },
+            "price_list_rate",
+        )
+
+        if mrp and flt(mrp_price) != flt(mrp):
+            continue
+
+        if wsp and flt(wsp_price) != flt(wsp):
+            continue
+
+        result.append({
+            "item_code": item.name,
+            "item_name": item.item_name,
+            "item_group": item.item_group,
+            "colour": item_colour,
+            "colour_code": item_colour_code,
+            "size": item_size,
+            "mrp": mrp_price,
+            "wsp": wsp_price,
+        })
+
+    return result
+
+
+@frappe.whitelist()
+def get_barcodes(items):
+
+    items = frappe.parse_json(items)
+
+    result = {}
+
+    for row in items:
+
+        barcode = frappe.db.get_value(
+            "Item Barcode",
+            {"parent": row["item_code"]},
+            "barcode"
+        )
+
+        result[row["item_code"]] = barcode
+
+    return result
