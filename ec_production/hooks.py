@@ -59,7 +59,6 @@ doctype_js = {
 
 doctype_list_js = {
     "Item": "public/js/item_list.js",
-    # "Item": "public/js/item_search.js"
 }
 
 # Svg Icons
