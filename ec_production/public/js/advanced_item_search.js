@@ -31,11 +31,29 @@
                     </button>
                 `);
 
+            grid.wrapper
+                .find(".grid-buttons")
+                .append(`
+                    <button
+                        class="btn btn-xs btn-secondary item-visualizer-btn"
+                    >
+                        Item Visualizer
+                    </button>
+                `);
+
             grid.wrapper.on(
                 "click",
                 ".advanced-search-btn",
                 () => {
                     open_advanced_search(frm);
+                }
+            );
+
+            grid.wrapper.on(
+                "click",
+                ".item-visualizer-btn",
+                () => {
+                    open_item_visualizer(frm);
                 }
             );
         }
@@ -72,6 +90,11 @@ function open_advanced_search(frm) {
             <div>
                 <label>Style No</label>
                 <input class="form-control style-no">
+            </div>
+
+            <div>
+                <label>Barcode</label>
+                <input class="form-control barcode">
             </div>
 
             <div>
@@ -130,6 +153,9 @@ function bind_search(frm, wrapper, dialog) {
                 style_no:
                     wrapper.find(".style-no").val(),
 
+                barcode:
+                    wrapper.find(".barcode").val(),
+
                 colour:
                     wrapper.find(".colour").val(),
 
@@ -147,6 +173,8 @@ function bind_search(frm, wrapper, dialog) {
 
                 group_name:
                     wrapper.find(".group-name").val(),
+
+
             },
             callback(r) {
 
@@ -158,6 +186,7 @@ function bind_search(frm, wrapper, dialog) {
                         <thead>
                             <tr>
                                 <th>Item</th>
+                                <th>Barcode</th>
                                 <th>Colour</th>
                                 <th>Size</th>
                                 <th>MRP</th>
@@ -172,10 +201,15 @@ function bind_search(frm, wrapper, dialog) {
 
                     html += `
                         <tr
-                            data-item="${item.item_code}"
-                        >
+    data-item="${item.item_code}"
+    data-barcode="${item.barcode || ''}"
+>
                             <td>
                                 ${item.item_code}
+                            </td>
+
+                            <td>
+                                ${item.barcode}
                             </td>
 
                             <td>
@@ -247,12 +281,11 @@ function bind_search(frm, wrapper, dialog) {
                         .val()
                 );
 
-                if (!qty) {
-                    return;
-                }
+                if (!qty) return;
 
                 selected_items.push({
                     item_code: $(this).attr("data-item"),
+                    barcode: $(this).attr("data-barcode"),
                     qty
                 });
             });
@@ -272,181 +305,101 @@ function bind_search(frm, wrapper, dialog) {
 
             try {
 
-                console.log(
-                    "[Bulk Add] Selected Items:",
-                    selected_items
-                );
+                // if (!frm._bulk_scanner) {
 
-                const r = await frappe.call({
-                    method:
-                        "ec_production.api.item.get_barcodes",
-                    args: {
-                        items: selected_items
-                    }
-                });
+                //     frm._bulk_scanner =
+                //         new erpnext.utils.BarcodeScanner({
+                //             frm
+                //         });
 
-                const barcode_map =
-                    r.message || {};
+                //     const original_set_item =
+                //         frm._bulk_scanner.set_item;
 
-                console.log(
-                    "[Bulk Add] Barcode Map:",
-                    barcode_map
-                );
+                //     frm._bulk_scanner.set_item =
+                //         function (
+                //             row,
+                //             item_code,
+                //             barcode,
+                //             batch_no,
+                //             serial_no
+                //         ) {
+
+                //             const qty =
+                //                 this.bulk_qty || 1;
+
+                //             this.bulk_qty = null;
+
+                //             const original_qty =
+                //                 flt(
+                //                     row[this.qty_field]
+                //                 ) || 0;
+
+                //             row[this.qty_field] =
+                //                 original_qty +
+                //                 qty -
+                //                 1;
+
+                //             return original_set_item.call(
+                //                 this,
+                //                 row,
+                //                 item_code,
+                //                 barcode,
+                //                 batch_no,
+                //                 serial_no
+                //             );
+                //         };
+                // }
+
+                // const scanner =
+                //     frm._bulk_scanner;
 
                 let added = 0;
-                let failed = 0;
 
-                if (!frm._bulk_scanner) {
-                    frm._bulk_scanner = new erpnext.utils.BarcodeScanner({
-                        frm
-                    });
-                }
+                for (const item of selected_items) {
 
-                const scanner = frm._bulk_scanner;
-
-                for (const row of selected_items) {
-
-                    const barcode =
-                        barcode_map[row.item_code];
-
-                    if (!barcode) {
-                        continue;
-                    }
-
-                    // console.log(
-                    //     `[Bulk Add] Processing ${row.item_code}`
-                    // );
-
-                    // console.log(
-                    //     `[Bulk Add] Barcode ${barcode}`
-                    // );
-
-                    // Scan only once
-                    try {
-
-                        // console.log(
-                        //     `calling scanner`
-                        // );
-
-                        // console.log(
-                        //     `setting field value`
-                        // );
-                        scanner.scan_barcode_field.set_value(
-                            barcode
-                        );
-
-                        scanner.scan_barcode_field.value =
-                            barcode;
-
-                        await frappe.utils.sleep(200);
-
-                        // console.log(
-                        //     `calling process scan `
-                        // );
-
-                        const p = scanner.process_scan();
-
-                        // console.log("process_scan started");
-
-                        await Promise.race([
-                            p,
-                            frappe.utils.sleep(3000)
-                        ]);
-
-                        // console.log("process_scan finished or timed out");
-
-                        // console.log(
-                        //     `scan processed`
-                        // );
-
-                        added++;
-
-                        // console.log(
-                        //     `${barcode} added`
-                        // );
-
-                    } catch (e) {
-
-                        failed++;
-
-                        console.error(e);
-                    }
-                }
-
-
-                // console.log(
-                //     "Selected Items",
-                //     selected_items
-                // );
-
-                // console.log(
-                //     "Current Grid",
-                //     frm.doc.items.map(d => ({
-                //         item_code: d.item_code,
-                //         qty: d.qty
-                //     }))
-                // );
-
-                await frappe.utils.sleep(1500);
-
-                frm.refresh_field("items");
-
-                // console.table(
-                //     frm.doc.items.map(d => ({
-                //         item_code: d.item_code,
-                //         qty: d.qty,
-                //         row: d.name
-                //     }))
-                // );
-
-                for (const selected of selected_items) {
-
-                    const rows = frm.doc.items.filter(
-                        d => d.item_code === selected.item_code
+                    let existing = frm.doc.items.find(
+                        d => d.item_code === item.item_code
                     );
 
-                    // console.log(
-                    //     `Found ${rows.length} row(s) for ${selected.item_code}`
-                    // );
+                    if (existing) {
 
-                    for (const row of rows) {
+                        await frappe.model.set_value(
+                            existing.doctype,
+                            existing.name,
+                            "qty",
+                            cint(existing.qty) + cint(item.qty)
+                        );
 
-                        // console.log(
-                        //     `Updating ${row.item_code} from ${row.qty} to ${selected.qty}`
-                        // );
+                    } else {
+
+                        const row = frm.add_child("items");
 
                         await frappe.model.set_value(
                             row.doctype,
                             row.name,
-                            "qty",
-                            selected.qty
+                            "item_code",
+                            item.item_code
                         );
 
-                        // Force ERPNext recalculation
-                        await frm.script_manager.trigger(
-                            "qty",
-                            row.doctype,
-                            row.name
-                        );
+                        if (item.qty) {
+
+                            await frappe.model.set_value(
+                                row.doctype,
+                                row.name,
+                                "qty",
+                                cint(item.qty)
+                            );
+                        }
                     }
+
+                    added++;
                 }
 
                 frm.refresh_field("items");
-                frm.dirty();
-
-                console.log(
-                    "[Bulk Add] Complete",
-                    {
-                        added,
-                        failed,
-                        total_rows:
-                            frm.doc.items?.length
-                    }
-                );
 
                 frappe.show_alert({
                     message: __(
-                        `${added} barcode(s) processed`
+                        `${added} item(s) populated`
                     ),
                     indicator: "green"
                 });
@@ -455,10 +408,7 @@ function bind_search(frm, wrapper, dialog) {
 
             } catch (e) {
 
-                console.error(
-                    "[Bulk Add] Fatal Error",
-                    e
-                );
+                console.error(e);
 
                 frappe.msgprint(
                     __("Failed to populate items")
@@ -470,4 +420,176 @@ function bind_search(frm, wrapper, dialog) {
             }
         }
     );
+}
+
+function open_item_visualizer(frm) {
+
+    const items = frm.doc.items || [];
+
+    if (!items.length) {
+        frappe.msgprint("No items found");
+        return;
+    }
+
+    const sizes = ["36", "38", "40", "42", "44", "46", "48"];
+
+    const grouped = {};
+
+    items.forEach(row => {
+
+        const item_code =
+            row.item_code || "";
+
+        const qty =
+            flt(row.qty || 0);
+
+        const parts =
+            (row.item_name || row.item_code || "")
+                .split("-");
+
+        const style_no =
+            parts[0] || "";
+
+        const colour =
+            parts[1] || "";
+
+        const colour_code =
+            parts[2] || "";
+
+        const size =
+            parts[3] || "";
+
+
+
+        const key =
+            `${style_no}|${colour}|${colour_code}`;
+
+        if (!grouped[key]) {
+
+            grouped[key] = {
+                style_no,
+                colour,
+                colour_code,
+                total: 0
+            };
+
+            sizes.forEach(s => {
+                grouped[key][s] = 0;
+            });
+
+            grouped[key].Oth = 0;
+        }
+
+        if (sizes.includes(size)) {
+            grouped[key][size] += qty;
+        } else {
+            grouped[key].Oth += qty;
+        }
+
+        grouped[key].total += qty;
+    });
+
+    let html = `
+        <div style="overflow:auto;">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Style No</th>
+                        <th>Colour</th>
+                        <th>Colour Code</th>
+    `;
+
+    sizes.forEach(size => {
+        html += `<th>${size}</th>`;
+    });
+
+    html += `
+                        <th>Oth</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+
+
+    Object.values(grouped).forEach(row => {
+
+        html += `
+        <tr>
+            <td>${row.style_no}</td>
+            <td>${row.colour}</td>
+            <td>${row.colour_code}</td>
+    `;
+
+        sizes.forEach(size => {
+            html += `<td>${row[size]}</td>`;
+        });
+
+        html += `
+            <td>${row.Oth}</td>
+            <td><b>${row.total}</b></td>
+        </tr>
+    `;
+    });
+
+    const grand_total = {
+        Oth: 0,
+        total: 0
+    };
+
+    sizes.forEach(size => {
+        grand_total[size] = 0;
+    });
+
+    Object.values(grouped).forEach(row => {
+
+        sizes.forEach(size => {
+            grand_total[size] += row[size] || 0;
+        });
+
+        grand_total.Oth += row.Oth || 0;
+        grand_total.total += row.total || 0;
+    });
+
+    html += `
+    <tr style="
+        font-weight:bold;
+        background:#f5f7fa;
+        position:sticky;
+        bottom:0;
+    ">
+        <td colspan="3">Grand Total</td>
+`;
+
+    sizes.forEach(size => {
+        html += `<td>${grand_total[size]}</td>`;
+    });
+
+    html += `
+        <td>${grand_total.Oth}</td>
+        <td>${grand_total.total}</td>
+    </tr>
+`;
+
+    html += `
+            </tbody>
+        </table>
+    </div>
+`;
+
+    const d = new frappe.ui.Dialog({
+        title: "Item Visualizer",
+        size: "extra-large",
+        fields: [
+            {
+                fieldtype: "HTML",
+                fieldname: "visualizer"
+            }
+        ]
+    });
+
+    d.show();
+
+    d.fields_dict.visualizer.$wrapper.html(html);
 }

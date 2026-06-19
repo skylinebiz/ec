@@ -303,7 +303,10 @@ def search_items(
 
     items = frappe.get_all(
         "Item",
-         filters=[*item_filters,["Item", "has_variants", "=", 0]],
+        filters=[
+            *item_filters,
+            ["Item", "has_variants", "=", 0]
+        ],
         fields=[
             "name",
             "item_name",
@@ -362,6 +365,12 @@ def search_items(
         if wsp and flt(wsp_price) != flt(wsp):
             continue
 
+        barcode = frappe.db.get_value(
+            "Item Barcode",
+            {"parent": item.name},
+            "barcode"
+        )
+
         result.append({
             "item_code": item.name,
             "item_name": item.item_name,
@@ -369,6 +378,7 @@ def search_items(
             "colour": item_colour,
             "colour_code": item_colour_code,
             "size": item_size,
+            "barcode": barcode,
             "mrp": mrp_price,
             "wsp": wsp_price,
         })
