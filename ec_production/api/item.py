@@ -404,3 +404,68 @@ def get_barcodes(items):
         result[row["item_code"]] = barcode
 
     return result
+
+@frappe.whitelist()
+def get_item_visualizer_data(item_codes):
+
+    if isinstance(item_codes, str):
+        item_codes = frappe.parse_json(item_codes)
+
+    items = frappe.get_all(
+        "Item",
+        filters={
+            "item_code": ["in", item_codes]
+        },
+        fields=[
+            "name",
+            "item_code",
+            "item_name"
+        ]
+    )
+
+    result = {}
+
+    for item in items:
+
+        attrs = frappe.get_all(
+            "Item Variant Attribute",
+            filters={
+                "parent": item.name
+            },
+            fields=[
+                "attribute",
+                "attribute_value"
+            ]
+        )
+
+        data = {
+            "style_no": item.item_name.split("-")[0]
+            if item.item_name else "",
+            "colour": "",
+            "colour_code": "",
+            "size": "",
+            "barcode": ""
+        }
+
+        for attr in attrs:
+
+            if attr.attribute == "Colour":
+                data["colour"] = attr.attribute_value
+
+            elif attr.attribute == "Colour Code":
+                data["colour_code"] = attr.attribute_value
+
+            elif attr.attribute == "Size":
+                data["size"] = attr.attribute_value
+
+        barcode = frappe.db.get_value(
+            "Item Barcode",
+            {"parent": item.name},
+            "barcode"
+        )
+
+        data["barcode"] = barcode
+
+        result[item.item_code] = data
+
+    return result

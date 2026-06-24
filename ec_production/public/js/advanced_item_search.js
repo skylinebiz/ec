@@ -424,172 +424,180 @@ function bind_search(frm, wrapper, dialog) {
 
 function open_item_visualizer(frm) {
 
-    const items = frm.doc.items || [];
+    const item_codes = [...new Set(
+        (frm.doc.items || [])
+            .map(d => d.item_code)
+            .filter(Boolean)
+    )];
 
-    if (!items.length) {
+    if (!item_codes.length) {
         frappe.msgprint("No items found");
         return;
     }
 
-    const sizes = ["36", "38", "40", "42", "44", "46", "48"];
+    frappe.dom.freeze(__("Loading Item Visualizer..."));
 
-    const grouped = {};
+    frappe.call({
+        method: "ec_production.api.item.get_item_visualizer_data",
+        args: {
+            item_codes
+        },
+        callback: function (r) {
 
-    items.forEach(row => {
+            frappe.dom.unfreeze();
 
-        const item_code =
-            row.item_code || "";
+            if (!r.message) return;
 
-        const qty =
-            flt(row.qty || 0);
+            const item_map = r.message;
 
-        const parts =
-            (row.item_name || row.item_code || "")
-                .split("-");
+            const grouped = {};
+            const sizes = ["36", "38", "40", "42", "44", "46", "48"];
 
-        const style_no =
-            parts[0] || "";
+            frm.doc.items.forEach(row => {
 
-        const colour =
-            parts[1] || "";
+                const details = item_map[row.item_code] || {};
 
-        const colour_code =
-            parts[2] || "";
+                const style_no = details.style_no || "";
+                const colour = details.colour || "";
+                const colour_code = details.colour_code || "";
+                const size = details.size || "";
+                const barcode = details.barcode || "";
 
-        const size =
-            parts[3] || "";
+                const key =
+                    `${style_no}|${colour}|${colour_code}`;
+
+                if (!grouped[key]) {
+
+                    grouped[key] = {
+                        style_no,
+                        colour,
+                        colour_code,
+                        barcode,
+                        total: 0
+                    };
+
+                    sizes.forEach(s => grouped[key][s] = 0);
+                    grouped[key].Oth = 0;
+                }
+
+                const qty = flt(row.qty);
+
+                if (sizes.includes(size)) {
+                    grouped[key][size] += qty;
+                } else {
+                    grouped[key].Oth += qty;
+                }
+
+                grouped[key].total += qty;
+            });
+
+            console.log(grouped);
+
+            let html = `
+                <div style="overflow:auto;">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Style No</th>
+                                <th>Barcode</th>
+                                <th>Colour</th>
+                                <th>Colour Code</th>
+            `;
+
+            sizes.forEach(size => {
+                html += `<th>${size}</th>`;
+            });
+
+            html += `
+                        <th>Oth</th>
+                        <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
 
 
 
-        const key =
-            `${style_no}|${colour}|${colour_code}`;
+            Object.values(grouped).forEach(row => {
 
-        if (!grouped[key]) {
+                html += `
+                <tr>
+                    <td>${row.style_no}</td>
+                    <td>${row.barcode}</td>
+                    <td>${row.colour}</td>
+                    <td>${row.colour_code}</td>
+            `;
 
-            grouped[key] = {
-                style_no,
-                colour,
-                colour_code,
+                sizes.forEach(size => {
+                    html += `<td>${row[size]}</td>`;
+                });
+
+                html += `
+                    <td>${row.Oth}</td>
+                    <td><b>${row.total}</b></td>
+                </tr>
+            `;
+            });
+
+            const grand_total = {
+                Oth: 0,
                 total: 0
             };
 
-            sizes.forEach(s => {
-                grouped[key][s] = 0;
+            sizes.forEach(size => {
+                grand_total[size] = 0;
             });
 
-            grouped[key].Oth = 0;
+            Object.values(grouped).forEach(row => {
+
+                sizes.forEach(size => {
+                    grand_total[size] += row[size] || 0;
+                });
+
+                grand_total.Oth += row.Oth || 0;
+                grand_total.total += row.total || 0;
+            });
+
+            html += `
+                <tr style="
+                    font-weight:bold;
+                    background:#f5f7fa;
+                    position:sticky;
+                    bottom:0;
+                ">
+                    <td colspan="4">Grand Total</td>
+            `;
+
+            sizes.forEach(size => {
+                html += `<td>${grand_total[size]}</td>`;
+            });
+
+            html += `
+                    <td>${grand_total.Oth}</td>
+                    <td>${grand_total.total}</td>
+                </tr>
+            `;
+
+            html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+            const d = new frappe.ui.Dialog({
+                title: "Item Visualizer",
+                size: "extra-large",
+                fields: [
+                    {
+                        fieldtype: "HTML",
+                        fieldname: "visualizer"
+                    }
+                ]
+            });
+
+            d.show();
+
+            d.fields_dict.visualizer.$wrapper.html(html);
         }
-
-        if (sizes.includes(size)) {
-            grouped[key][size] += qty;
-        } else {
-            grouped[key].Oth += qty;
-        }
-
-        grouped[key].total += qty;
     });
-
-    let html = `
-        <div style="overflow:auto;">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Style No</th>
-                        <th>Colour</th>
-                        <th>Colour Code</th>
-    `;
-
-    sizes.forEach(size => {
-        html += `<th>${size}</th>`;
-    });
-
-    html += `
-                        <th>Oth</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-
-
-    Object.values(grouped).forEach(row => {
-
-        html += `
-        <tr>
-            <td>${row.style_no}</td>
-            <td>${row.colour}</td>
-            <td>${row.colour_code}</td>
-    `;
-
-        sizes.forEach(size => {
-            html += `<td>${row[size]}</td>`;
-        });
-
-        html += `
-            <td>${row.Oth}</td>
-            <td><b>${row.total}</b></td>
-        </tr>
-    `;
-    });
-
-    const grand_total = {
-        Oth: 0,
-        total: 0
-    };
-
-    sizes.forEach(size => {
-        grand_total[size] = 0;
-    });
-
-    Object.values(grouped).forEach(row => {
-
-        sizes.forEach(size => {
-            grand_total[size] += row[size] || 0;
-        });
-
-        grand_total.Oth += row.Oth || 0;
-        grand_total.total += row.total || 0;
-    });
-
-    html += `
-    <tr style="
-        font-weight:bold;
-        background:#f5f7fa;
-        position:sticky;
-        bottom:0;
-    ">
-        <td colspan="3">Grand Total</td>
-`;
-
-    sizes.forEach(size => {
-        html += `<td>${grand_total[size]}</td>`;
-    });
-
-    html += `
-        <td>${grand_total.Oth}</td>
-        <td>${grand_total.total}</td>
-    </tr>
-`;
-
-    html += `
-            </tbody>
-        </table>
-    </div>
-`;
-
-    const d = new frappe.ui.Dialog({
-        title: "Item Visualizer",
-        size: "extra-large",
-        fields: [
-            {
-                fieldtype: "HTML",
-                fieldname: "visualizer"
-            }
-        ]
-    });
-
-    d.show();
-
-    d.fields_dict.visualizer.$wrapper.html(html);
 }
