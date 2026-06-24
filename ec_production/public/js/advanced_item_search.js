@@ -499,10 +499,9 @@ function open_item_visualizer(frm) {
                         <thead>
                             <tr>
                                 <th>Style No</th>
-                                <th>Barcode</th>
                                 <th>Colour</th>
                                 <th>Colour Code</th>
-            `;
+                `;
 
             sizes.forEach(size => {
                 html += `<th>${size}</th>`;
@@ -514,29 +513,28 @@ function open_item_visualizer(frm) {
                             </tr>
                         </thead>
                         <tbody>
-            `;
+                `;
 
 
 
             Object.values(grouped).forEach(row => {
 
                 html += `
-                <tr>
-                    <td>${row.style_no}</td>
-                    <td>${row.barcode}</td>
-                    <td>${row.colour}</td>
-                    <td>${row.colour_code}</td>
-            `;
+                    <tr>
+                        <td>${row.style_no}</td>
+                        <td>${row.colour}</td>
+                        <td>${row.colour_code}</td>
+                `;
 
                 sizes.forEach(size => {
                     html += `<td>${row[size]}</td>`;
                 });
 
                 html += `
-                    <td>${row.Oth}</td>
-                    <td><b>${row.total}</b></td>
-                </tr>
-            `;
+                        <td>${row.Oth}</td>
+                        <td><b>${row.total}</b></td>
+                    </tr>
+                `;
             });
 
             const grand_total = {
@@ -565,7 +563,7 @@ function open_item_visualizer(frm) {
                     position:sticky;
                     bottom:0;
                 ">
-                    <td colspan="4">Grand Total</td>
+                    <td colspan="3">Grand Total</td>
             `;
 
             sizes.forEach(size => {
@@ -579,10 +577,10 @@ function open_item_visualizer(frm) {
             `;
 
             html += `
-                    </tbody>
-                </table>
-            </div>
-        `;
+                        </tbody>
+                    </table>
+                </div>
+            `;
 
             const d = new frappe.ui.Dialog({
                 title: "Item Visualizer",
