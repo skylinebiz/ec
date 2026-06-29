@@ -1,64 +1,78 @@
+frappe.ui.form.on("*", {
+    refresh(frm) {
 
-[
-    "Sales Order",
-    "Quotation",
-    "Sales Invoice",
-    "Delivery Note",
-    "Purchase Order",
-    "Purchase Receipt"
-].forEach(doctype => {
+        console.log("Current Doctype:", frm.doctype);
 
-    frappe.ui.form.on(doctype, {
-        refresh(frm) {
+        let table_field = Object.values(frm.fields_dict || {}).find(field => {
 
-            const grid = frm.fields_dict.items?.grid;
-
-            if (!grid) return;
-
-            if (
-                grid.wrapper.find(".advanced-search-btn").length
-            ) {
-                return;
+            if (field.df.fieldtype !== "Table") {
+                return false;
             }
 
-            grid.wrapper
-                .find(".grid-buttons")
-                .append(`
-                    <button
-                        class="btn btn-xs btn-secondary advanced-search-btn"
-                    >
-                        Advanced Search
-                    </button>
-                `);
+            const grid = field.grid;
 
-            grid.wrapper
-                .find(".grid-buttons")
-                .append(`
-                    <button
-                        class="btn btn-xs btn-secondary item-visualizer-btn"
-                    >
-                        Item Visualizer
-                    </button>
-                `);
+            if (!grid) {
 
-            grid.wrapper.on(
-                "click",
-                ".advanced-search-btn",
-                () => {
-                    open_advanced_search(frm);
-                }
+                return false;
+            }
+
+            const has_item_code = grid.docfields.some(
+                df => df.fieldname === "item_code"
             );
 
-            grid.wrapper.on(
-                "click",
-                ".item-visualizer-btn",
-                () => {
-                    open_item_visualizer(frm);
-                }
-            );
+            return has_item_code;
+        });
+
+        if (!table_field) {
+
+            return;
         }
-    });
 
+        const grid = table_field.grid;
+
+        if (
+            grid.wrapper.find(".advanced-search-btn").length
+        ) {
+            console.log(
+                "Buttons already exist. Skipping."
+            );
+            return;
+        }
+
+        grid.wrapper.find(".grid-buttons").append(`
+            <button class="btn btn-xs btn-secondary advanced-search-btn">
+                Advanced Search
+            </button>
+        `);
+
+        grid.wrapper.find(".grid-buttons").append(`
+            <button class="btn btn-xs btn-secondary item-visualizer-btn">
+                Item Visualizer
+            </button>
+        `);
+
+        grid.wrapper.on(
+            "click",
+            ".advanced-search-btn",
+            () => {
+                open_advanced_search(
+                    frm,
+                    table_field.df.fieldname
+                );
+            }
+        );
+
+        grid.wrapper.on(
+            "click",
+            ".item-visualizer-btn",
+            () => {
+                open_item_visualizer(
+                    frm,
+                    table_field.df.fieldname
+                );
+            }
+        );
+    }
 });
 
 function open_advanced_search(frm) {
@@ -75,6 +89,20 @@ function open_advanced_search(frm) {
     });
 
     d.show();
+
+    // let is_populating = false;
+
+    // d.$wrapper.on("hide.bs.modal", function (e) {
+
+    //     if (is_populating) {
+
+    //         e.preventDefault();
+
+    //         frappe.throw(
+    //             __("Items are currently being populated. Please wait.")
+    //         );
+    //     }
+    // });
 
     const wrapper =
         d.fields_dict.content.$wrapper;
@@ -135,141 +163,199 @@ function open_advanced_search(frm) {
 
         </div>
 
+        <div class="populate-progress mt-3" style="display:none;">
+
+        <div style="display:flex;align-items:center;gap:8px;">
+            <i class="fa fa-spinner fa-spin"
+            style="font-size:16px;color:var(--primary);"></i>
+
+            <span class="progress-text">
+                Populating 0 of 0
+            </span>
+        </div>
+
+            <div class="mt-2">
+                Pending:
+                <b class="pending-count">0</b>
+
+                &nbsp;|&nbsp;
+
+                Inserted:
+                <b class="inserted-count">0</b>
+            </div>
+
+        </div>
+
         <div class="search-results mt-4"></div>
     `);
 
     bind_search(frm, wrapper, d);
 };
 
-
 function bind_search(frm, wrapper, dialog) {
 
     wrapper.on("click", ".search-btn", () => {
 
+        const filters = {
+            style_no: wrapper.find(".style-no").val()?.trim(),
+            barcode: wrapper.find(".barcode").val()?.trim(),
+            colour: wrapper.find(".colour").val()?.trim(),
+            colour_code: wrapper.find(".colour-code").val()?.trim(),
+            size: wrapper.find(".size").val()?.trim(),
+            mrp: wrapper.find(".mrp").val()?.trim(),
+            wsp: wrapper.find(".wsp").val()?.trim(),
+            group_name: wrapper.find(".group-name").val()?.trim()
+        };
+
+        // Don't allow empty search
+        const hasFilter = Object.values(filters)
+            .some(value => value);
+
+        if (!hasFilter) {
+
+            frappe.msgprint(
+                __("Please enter at least one search filter")
+            );
+
+            return;
+        }
+
+        wrapper.find(".search-btn")
+            .prop("disabled", true)
+            .text(__("Searching..."));
+
         frappe.call({
-            method:
-                "ec.api.item.search_items",
+            method: "ec.api.item.search_items",
+
             args: {
-                style_no:
-                    wrapper.find(".style-no").val(),
-
-                barcode:
-                    wrapper.find(".barcode").val(),
-
-                colour:
-                    wrapper.find(".colour").val(),
-
-                colour_code:
-                    wrapper.find(".colour-code").val(),
-
-                size:
-                    wrapper.find(".size").val(),
-
-                mrp:
-                    wrapper.find(".mrp").val(),
-
-                wsp:
-                    wrapper.find(".wsp").val(),
-
-                group_name:
-                    wrapper.find(".group-name").val(),
-
-
+                ...filters,
+                limit_page_length: 50
             },
+
             callback(r) {
 
-                const items =
-                    r.message || [];
+                wrapper.find(".search-btn")
+                    .prop("disabled", false)
+                    .text(__("Search"));
+
+                const items = r.message || [];
+
+                if (!items.length) {
+
+                    wrapper.find(".search-results").html(`
+                    <div class="text-center text-muted p-4">
+                        No records found
+                    </div>
+                `);
+
+                    return;
+                }
 
                 let html = `
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Barcode</th>
-                                <th>Colour</th>
-                                <th>Size</th>
-                                <th>MRP</th>
-                                <th>WSP</th>
-                                <th width="120">Qty</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Barcode</th>
+                            <th>Colour</th>
+                            <th>Size</th>
+                            <th>MRP</th>
+                            <th>WSP</th>
+                            <th width="120">Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
 
                 items.forEach(item => {
 
                     html += `
-                        <tr
-    data-item="${item.item_code}"
-    data-barcode="${item.barcode || ''}"
->
-                            <td>
-                                ${item.item_code}
-                            </td>
+                    <tr
+                        data-item="${item.item_code}"
+                        data-barcode="${item.barcode || ''}"
+                    >
+                        <td>${item.item_code}</td>
 
-                            <td>
-                                ${item.barcode}
-                            </td>
+                        <td>${item.barcode || ""}</td>
 
-                            <td>
-                                ${item.colour || ""}
-                            </td>
+                        <td>${item.colour || ""}</td>
 
-                            <td>
-                                ${item.size || ""}
-                            </td>
+                        <td>${item.size || ""}</td>
 
-                            <td>
-                                ${item.mrp || ""}
-                            </td>
+                        <td>${item.mrp || ""}</td>
 
-                            <td>
-                                ${item.wsp || ""}
-                            </td>
+                        <td>
+                            ${item.wsp
+                            ? flt(item.wsp, 3).toFixed(3)
+                            : "0.000"}
+                        </td>
 
-                            <td>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value="0"
-                                    class="
-                                        form-control
-                                        qty-input
-                                    "
-                                >
-                            </td>
-                        </tr>
-                    `;
+                        <td>
+                            <input
+                                type="number"
+                                min="0"
+                                value="0"
+                                class="form-control qty-input"
+                            >
+                        </td>
+                    </tr>
+                `;
                 });
 
                 html += `
-                        </tbody>
-                    </table>
+                    </tbody>
+                </table>
 
-                    <div class="text-right">
-                        <button
-                            class="
-                                btn btn-primary
-                                add-selected-items
-                            "
-                        >
-                            Populate
-                        </button>
-                    </div>
-                `;
+                <div class="text-muted mb-2">
+                    Showing ${items.length} record(s)
+                    (maximum 50)
+                </div>
 
-                wrapper
-                    .find(".search-results")
+                <div class="text-right">
+                    <button
+                        class="btn btn-primary add-selected-items">
+                        Populate
+                    </button>
+                </div>
+            `;
+
+                wrapper.find(".search-results")
                     .html(html);
+            },
+
+            error() {
+
+                wrapper.find(".search-btn")
+                    .prop("disabled", false)
+                    .text(__("Search"));
+
+                frappe.msgprint(
+                    __("Failed to fetch items")
+                );
             }
         });
+    });
+
+    let is_populating = false;
+
+    dialog.$wrapper.on("hide.bs.modal", function (e) {
+
+        if (is_populating) {
+
+            e.preventDefault();
+
+            frappe.throw(
+                __("Items are currently being populated. Please wait.")
+            );
+        }
     });
 
     wrapper.on(
         "click",
         ".add-selected-items",
         async () => {
+
+            if (is_populating) return;
 
             const selected_items = [];
 
@@ -299,67 +385,180 @@ function bind_search(frm, wrapper, dialog) {
                 return;
             }
 
-            frappe.dom.freeze(
-                __("Populating Items...")
-            );
+            // Production Plan
+            if (frm.doctype === "Production Plan") {
+
+                is_populating = true;
+
+                wrapper.find(".populate-progress")
+                    .show();
+
+                wrapper.find(".search-btn")
+                    .prop("disabled", true);
+
+                wrapper.find(".add-selected-items")
+                    .prop("disabled", true);
+
+                wrapper.find(".pending-count")
+                    .text(selected_items.length);
+
+                wrapper.find(".inserted-count")
+                    .text(0);
+
+                wrapper.find(".progress-text")
+                    .text(
+                        __("Populating 0 of {0}", [
+                            selected_items.length
+                        ])
+                    );
+
+                frappe.call({
+                    method:
+                        "ec.api.production_plan.populate_production_plan_items",
+
+                    args: {
+                        doc: frm.doc,
+                        items: selected_items
+                    },
+
+                    callback(r) {
+
+                        try {
+
+                            if (!r.message) return;
+
+                            frm.clear_table("po_items");
+
+                            let inserted = 0;
+                            let total =
+                                r.message.po_items.length;
+
+                            (r.message.po_items || [])
+                                .forEach(d => {
+
+                                    let row =
+                                        frm.add_child(
+                                            "po_items"
+                                        );
+
+                                    Object.keys(d)
+                                        .forEach(key => {
+
+                                            if ([
+                                                "name",
+                                                "parent",
+                                                "parentfield",
+                                                "parenttype",
+                                                "doctype"
+                                            ].includes(key))
+                                                return;
+
+                                            row[key] = d[key];
+                                        });
+
+                                    inserted++;
+
+                                    wrapper
+                                        .find(
+                                            ".inserted-count"
+                                        )
+                                        .text(inserted);
+
+                                    wrapper
+                                        .find(
+                                            ".pending-count"
+                                        )
+                                        .text(
+                                            total - inserted
+                                        );
+
+                                    wrapper
+                                        .find(
+                                            ".progress-text"
+                                        )
+                                        .text(
+                                            `Populating ${inserted} of ${total}`
+                                        );
+                                });
+
+                            frm.refresh_field("po_items");
+
+                            frappe.show_alert({
+                                message:
+                                    __("Items populated"),
+                                indicator: "green"
+
+                            });
+                            wrapper.find(".qty-input").val(0);
+
+                        } finally {
+
+                            is_populating = false;
+
+                            wrapper.find(
+                                ".search-btn"
+                            ).prop(
+                                "disabled",
+                                false
+                            );
+
+                            wrapper.find(
+                                ".add-selected-items"
+                            ).prop(
+                                "disabled",
+                                false
+                            );
+
+                            wrapper.find(".fa-spinner").hide();
+
+                            wrapper.find(
+                                ".progress-text"
+                            ).text(
+                                __("Completed")
+                            );
+                        }
+                    }
+                });
+
+                return;
+            }
+
+            // Sales Order / Quotation / Invoice
+
+            is_populating = true;
+
+            wrapper.find(".populate-progress")
+                .show();
+
+            wrapper.find(".search-btn")
+                .prop("disabled", true);
+
+            wrapper.find(".add-selected-items")
+                .prop("disabled", true);
+
+            let inserted = 0;
+            let total = selected_items.length;
+            let pending = total;
+
+            wrapper.find(".pending-count")
+                .text(pending);
+
+            wrapper.find(".inserted-count")
+                .text(inserted);
+
+            wrapper.find(".progress-text")
+                .text(`Populating 0 of ${total}`);
 
             try {
 
-                // if (!frm._bulk_scanner) {
-
-                //     frm._bulk_scanner =
-                //         new erpnext.utils.BarcodeScanner({
-                //             frm
-                //         });
-
-                //     const original_set_item =
-                //         frm._bulk_scanner.set_item;
-
-                //     frm._bulk_scanner.set_item =
-                //         function (
-                //             row,
-                //             item_code,
-                //             barcode,
-                //             batch_no,
-                //             serial_no
-                //         ) {
-
-                //             const qty =
-                //                 this.bulk_qty || 1;
-
-                //             this.bulk_qty = null;
-
-                //             const original_qty =
-                //                 flt(
-                //                     row[this.qty_field]
-                //                 ) || 0;
-
-                //             row[this.qty_field] =
-                //                 original_qty +
-                //                 qty -
-                //                 1;
-
-                //             return original_set_item.call(
-                //                 this,
-                //                 row,
-                //                 item_code,
-                //                 barcode,
-                //                 batch_no,
-                //                 serial_no
-                //             );
-                //         };
-                // }
-
-                // const scanner =
-                //     frm._bulk_scanner;
-
-                let added = 0;
-
                 for (const item of selected_items) {
 
-                    let existing = frm.doc.items.find(
-                        d => d.item_code === item.item_code
-                    );
+                    let existing =
+                        frm.doc.items.find(
+                            d =>
+                                d.item_code ===
+                                item.item_code
+                        );
 
                     if (existing) {
 
@@ -367,12 +566,14 @@ function bind_search(frm, wrapper, dialog) {
                             existing.doctype,
                             existing.name,
                             "qty",
-                            cint(existing.qty) + cint(item.qty)
+                            cint(existing.qty)
+                            + cint(item.qty)
                         );
 
                     } else {
 
-                        const row = frm.add_child("items");
+                        const row =
+                            frm.add_child("items");
 
                         await frappe.model.set_value(
                             row.doctype,
@@ -381,30 +582,39 @@ function bind_search(frm, wrapper, dialog) {
                             item.item_code
                         );
 
-                        if (item.qty) {
-
-                            await frappe.model.set_value(
-                                row.doctype,
-                                row.name,
-                                "qty",
-                                cint(item.qty)
-                            );
-                        }
+                        await frappe.model.set_value(
+                            row.doctype,
+                            row.name,
+                            "qty",
+                            cint(item.qty)
+                        );
                     }
 
-                    added++;
+                    inserted++;
+                    pending--;
+
+                    wrapper.find(".inserted-count")
+                        .text(inserted);
+
+                    wrapper.find(".pending-count")
+                        .text(pending);
+
+                    wrapper.find(".progress-text")
+                        .text(
+                            `Populating ${inserted} of ${total}`
+                        );
                 }
 
                 frm.refresh_field("items");
 
                 frappe.show_alert({
                     message: __(
-                        `${added} item(s) populated`
+                        `${inserted} item(s) populated`
                     ),
                     indicator: "green"
                 });
 
-                dialog.hide();
+                wrapper.find(".qty-input").val(0);
 
             } catch (e) {
 
@@ -416,7 +626,22 @@ function bind_search(frm, wrapper, dialog) {
 
             } finally {
 
-                frappe.dom.unfreeze();
+                is_populating = false;
+
+                wrapper.find(".search-btn")
+                    .prop("disabled", false);
+
+                wrapper.find(".add-selected-items")
+                    .prop("disabled", false);
+
+                wrapper.find(".fa-spinner").hide();
+
+                wrapper.find(".progress-text")
+                    .text(
+                        `Completed ${inserted} of ${total}`
+                    );
+
+                wrapper.find(".qty-input").val(0);
             }
         }
     );

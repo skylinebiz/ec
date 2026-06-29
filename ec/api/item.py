@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from erpnext.controllers.item_variant import create_variant
 from itertools import product
-from frappe.utils import flt
+from frappe.utils import flt, cint
 from frappe.model.naming import make_autoname
 
 @frappe.whitelist()
@@ -288,6 +288,7 @@ def search_items(
     mrp=None,
     wsp=None,
     group_name=None,
+    limit_page_length=50
 ):
     item_filters = []
 
@@ -301,6 +302,7 @@ def search_items(
             ["Item", "item_group", "like", f"%{group_name}%"]
         )
 
+    limit_page_length = cint(limit_page_length) or 50
     items = frappe.get_all(
         "Item",
         filters=[
@@ -312,7 +314,7 @@ def search_items(
             "item_name",
             "item_group",
         ],
-        limit_page_length=500,
+        limit_page_length=limit_page_length,
     )
 
     result = []
