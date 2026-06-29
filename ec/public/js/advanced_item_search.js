@@ -1,64 +1,78 @@
+frappe.ui.form.on("*", {
+    refresh(frm) {
 
-[
-    "Sales Order",
-    "Quotation",
-    "Sales Invoice",
-    "Delivery Note",
-    "Purchase Order",
-    "Purchase Receipt"
-].forEach(doctype => {
+        console.log("Current Doctype:", frm.doctype);
 
-    frappe.ui.form.on(doctype, {
-        refresh(frm) {
+        let table_field = Object.values(frm.fields_dict || {}).find(field => {
 
-            const grid = frm.fields_dict.items?.grid;
-
-            if (!grid) return;
-
-            if (
-                grid.wrapper.find(".advanced-search-btn").length
-            ) {
-                return;
+            if (field.df.fieldtype !== "Table") {
+                return false;
             }
 
-            grid.wrapper
-                .find(".grid-buttons")
-                .append(`
-                    <button
-                        class="btn btn-xs btn-secondary advanced-search-btn"
-                    >
-                        Advanced Search
-                    </button>
-                `);
+            const grid = field.grid;
 
-            grid.wrapper
-                .find(".grid-buttons")
-                .append(`
-                    <button
-                        class="btn btn-xs btn-secondary item-visualizer-btn"
-                    >
-                        Item Visualizer
-                    </button>
-                `);
+            if (!grid) {
 
-            grid.wrapper.on(
-                "click",
-                ".advanced-search-btn",
-                () => {
-                    open_advanced_search(frm);
-                }
+                return false;
+            }
+
+            const has_item_code = grid.docfields.some(
+                df => df.fieldname === "item_code"
             );
 
-            grid.wrapper.on(
-                "click",
-                ".item-visualizer-btn",
-                () => {
-                    open_item_visualizer(frm);
-                }
-            );
+            return has_item_code;
+        });
+
+        if (!table_field) {
+
+            return;
         }
-    });
 
+        const grid = table_field.grid;
+
+        if (
+            grid.wrapper.find(".advanced-search-btn").length
+        ) {
+            console.log(
+                "Buttons already exist. Skipping."
+            );
+            return;
+        }
+
+        grid.wrapper.find(".grid-buttons").append(`
+            <button class="btn btn-xs btn-secondary advanced-search-btn">
+                Advanced Search
+            </button>
+        `);
+
+        grid.wrapper.find(".grid-buttons").append(`
+            <button class="btn btn-xs btn-secondary item-visualizer-btn">
+                Item Visualizer
+            </button>
+        `);
+
+        grid.wrapper.on(
+            "click",
+            ".advanced-search-btn",
+            () => {
+                open_advanced_search(
+                    frm,
+                    table_field.df.fieldname
+                );
+            }
+        );
+
+        grid.wrapper.on(
+            "click",
+            ".item-visualizer-btn",
+            () => {
+                open_item_visualizer(
+                    frm,
+                    table_field.df.fieldname
+                );
+            }
+        );
+    }
 });
 
 function open_advanced_search(frm) {
@@ -141,7 +155,6 @@ function open_advanced_search(frm) {
     bind_search(frm, wrapper, d);
 };
 
-
 function bind_search(frm, wrapper, dialog) {
 
     wrapper.on("click", ".search-btn", () => {
@@ -201,9 +214,9 @@ function bind_search(frm, wrapper, dialog) {
 
                     html += `
                         <tr
-    data-item="${item.item_code}"
-    data-barcode="${item.barcode || ''}"
->
+                            data-item="${item.item_code}"
+                            data-barcode="${item.barcode || ''}"
+                        >
                             <td>
                                 ${item.item_code}
                             </td>
@@ -299,59 +312,85 @@ function bind_search(frm, wrapper, dialog) {
                 return;
             }
 
+            if (frm.doctype === "Production Plan") {
+
+                frappe.call({
+                    method:
+                        "ec.api.production_plan.populate_production_plan_items",
+
+                    args: {
+                        doc: frm.doc,
+                        items: selected_items
+                    },
+
+                    freeze: true,
+                    freeze_message: __("Populating Items..."),
+
+                    callback(r) {
+
+                        if (!r.message) return;
+
+                        // Remove existing rows properly
+                        frm.clear_table("po_items");
+
+                        // Add rows properly
+                        (r.message.po_items || []).forEach(d => {
+
+                            let row = frm.add_child("po_items");
+
+                            Object.keys(d).forEach(key => {
+
+                                // Skip internal fields
+                                if ([
+                                    "name",
+                                    "parent",
+                                    "parentfield",
+                                    "parenttype",
+                                    "doctype"
+                                ].includes(key)) return;
+
+                                row[key] = d[key];
+                            });
+                        });
+
+                        frm.refresh_field("po_items");
+
+                        frappe.show_alert({
+                            message: __("Items populated"),
+                            indicator: "green"
+                        });
+
+                        dialog.hide();
+                    }
+
+                    // callback(r) {
+
+                    //     if (!r.message) return;
+
+                    //     frm.doc.po_items = r.message.po_items || [];
+
+                    //     console.log(r.message.po_items);
+
+                    //     frm.refresh_field("po_items");
+
+                    //     frappe.show_alert({
+                    //         message: __("Items populated"),
+                    //         indicator: "green"
+                    //     });
+
+                    //     dialog.hide();
+                    // }
+                });
+
+                return;
+            }
+
             frappe.dom.freeze(
                 __("Populating Items...")
             );
 
+
             try {
-
-                // if (!frm._bulk_scanner) {
-
-                //     frm._bulk_scanner =
-                //         new erpnext.utils.BarcodeScanner({
-                //             frm
-                //         });
-
-                //     const original_set_item =
-                //         frm._bulk_scanner.set_item;
-
-                //     frm._bulk_scanner.set_item =
-                //         function (
-                //             row,
-                //             item_code,
-                //             barcode,
-                //             batch_no,
-                //             serial_no
-                //         ) {
-
-                //             const qty =
-                //                 this.bulk_qty || 1;
-
-                //             this.bulk_qty = null;
-
-                //             const original_qty =
-                //                 flt(
-                //                     row[this.qty_field]
-                //                 ) || 0;
-
-                //             row[this.qty_field] =
-                //                 original_qty +
-                //                 qty -
-                //                 1;
-
-                //             return original_set_item.call(
-                //                 this,
-                //                 row,
-                //                 item_code,
-                //                 barcode,
-                //                 batch_no,
-                //                 serial_no
-                //             );
-                //         };
-                // }
-
-                // const scanner =
-                //     frm._bulk_scanner;
 
                 let added = 0;
 
@@ -396,6 +435,7 @@ function bind_search(frm, wrapper, dialog) {
                 }
 
                 frm.refresh_field("items");
+                // frm.refresh_field("po_items");
 
                 frappe.show_alert({
                     message: __(
