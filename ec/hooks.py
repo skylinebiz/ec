@@ -56,6 +56,22 @@ doctype_list_js = {
     "Item": "public/js/item_list.js",
 }
 
+
+fixtures = [
+    {
+        "dt": "Custom Field",
+        "filters": [
+            ["module", "in", ["EC"]]
+        ],
+    }
+]
+
+doc_events = {
+    "Delivery Note": {
+        "before_save": "ec.overrides.delivery_note.before_save"
+    }
+}
+
 # Svg Icons
 # ------------------
 # include app icons in desk
@@ -99,7 +115,7 @@ doctype_list_js = {
 # Uninstallation
 # ------------
 
-# before_uninstall = "ec.uninstall.before_uninstall"
+before_uninstall = "ec.uninstall.before_uninstall"
 # after_uninstall = "ec.uninstall.after_uninstall"
 
 # Integration Setup
