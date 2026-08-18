@@ -16,13 +16,6 @@ def before_save(doc, method=None):
 
 
 def validate_adhoc_items(doc):
-    """
-    Adhoc Delivery Note must not contain Sales Order references.
-
-    Instead of clearing the references, throw an error showing
-    which items have a Sales Order reference.
-    """
-
     items_with_so = []
 
     for row in doc.items:
@@ -50,16 +43,12 @@ def validate_adhoc_items(doc):
 
 def set_sales_order_references(doc, delivery_type):
     """
-    Assign Delivery Note items against Sales Orders using:
-
     FIFO:
         Oldest Sales Order first.
 
     LIFO:
         Newest Sales Order first.
 
-    Automatically splits a Delivery Note row when
-    multiple Sales Orders are required.
     """
 
     if delivery_type == "Against (FIFO)":
@@ -77,26 +66,42 @@ def set_sales_order_references(doc, delivery_type):
 
     original_items = list(doc.items)
 
-    # Remove original rows.
+    # Group Delivery Note rows by item
+
+    grouped_items = {}
+
+    for row in original_items:
+
+        if not row.item_code:
+            continue
+
+        item_code = row.item_code
+
+        if item_code not in grouped_items:
+            grouped_items[item_code] = {
+                "row": row,
+                "qty": 0,
+            }
+
+        grouped_items[item_code]["qty"] += flt(row.qty)
+
+    # Remove original rows
     doc.set("items", [])
 
     so_cache = {}
 
-    for original_row in original_items:
+    # Allocate each item's TOTAL quantity
 
-        if not original_row.item_code:
-            append_original_row(doc, original_row)
-            continue
+    for item_code, item_data in grouped_items.items():
 
-        original_qty = flt(original_row.qty)
+        original_row = item_data["row"]
+        original_qty = flt(item_data["qty"])
 
         if original_qty <= 0:
-            append_original_row(doc, original_row)
             continue
 
-        item_code = original_row.item_code
+        # Get Sales Orders
 
-        # Get SOs only once per item.
         if item_code not in so_cache:
             so_cache[item_code] = get_sales_orders(
                 item_code,
@@ -114,6 +119,8 @@ def set_sales_order_references(doc, delivery_type):
             )
 
         remaining_qty = original_qty
+
+        # Allocate total quantity against SOs
 
         for so in sales_orders:
 
@@ -133,63 +140,38 @@ def set_sales_order_references(doc, delivery_type):
                 pending_qty
             )
 
-            # ----------------------------------------------------------
             # Create split row
-            # ----------------------------------------------------------
 
             new_row = append_original_row(
                 doc,
                 original_row
             )
 
-            # ----------------------------------------------------------
-            # Set quantity
-            # ----------------------------------------------------------
-
+            # Quantity
             new_row.qty = allocation_qty
 
-            # ----------------------------------------------------------
             # Sales Order reference
-            # ----------------------------------------------------------
-
             new_row.against_sales_order = so.sales_order
             new_row.so_detail = so.so_detail
 
-            # ----------------------------------------------------------
-            # Recalculate stock quantity
-            # ----------------------------------------------------------
-
-            conversion_factor = flt(
-                new_row.get("conversion_factor")
-            ) or 1
-
+            # Stock quantity
+            conversion_factor = (
+                flt(new_row.get("conversion_factor")) or 1
+            )
             new_row.stock_qty = (
                 allocation_qty * conversion_factor
             )
 
-            # ----------------------------------------------------------
-            # FIX RATE / AMOUNT
-            # ----------------------------------------------------------
+            # Rate / Amount
 
             rate = flt(new_row.rate)
-
-            # Rate remains the same as the original row.
             new_row.rate = rate
+            new_row.amount = allocation_qty * rate
 
-            # Amount must be recalculated from the NEW quantity.
-            new_row.amount = (
-                allocation_qty * rate
-            )
-
-            # ----------------------------------------------------------
-            # Base currency values
-            # ----------------------------------------------------------
-
-            exchange_rate = flt(
-                new_row.get("conversion_factor")
-            ) or 1
+            # Base Rate / Base Amount
 
             if new_row.get("base_rate") is not None:
+
                 base_rate = flt(new_row.base_rate)
 
                 new_row.base_rate = base_rate
@@ -197,11 +179,10 @@ def set_sales_order_references(doc, delivery_type):
                     allocation_qty * base_rate
                 )
 
-            # ----------------------------------------------------------
-            # Net rate / net amount
-            # ----------------------------------------------------------
+            # Net Rate / Net Amount
 
             if new_row.get("net_rate") is not None:
+
                 net_rate = flt(new_row.net_rate)
 
                 new_row.net_rate = net_rate
@@ -209,11 +190,10 @@ def set_sales_order_references(doc, delivery_type):
                     allocation_qty * net_rate
                 )
 
-            # ----------------------------------------------------------
-            # Base net values
-            # ----------------------------------------------------------
+            # Base Net Rate / Base Net Amount
 
             if new_row.get("base_net_rate") is not None:
+
                 base_net_rate = flt(
                     new_row.base_net_rate
                 )
@@ -223,36 +203,38 @@ def set_sales_order_references(doc, delivery_type):
                     allocation_qty * base_net_rate
                 )
 
-            # ----------------------------------------------------------
             # Update remaining quantity
-            # ----------------------------------------------------------
-
             remaining_qty -= allocation_qty
-
-            # Update our in-memory SO quantity.
             so.delivered_qty = (
                 flt(so.delivered_qty)
                 + allocation_qty
             )
 
-        # --------------------------------------------------------------
-        # Not enough pending SO quantity
-        # --------------------------------------------------------------
+        # Not enough SO quantity
 
         if remaining_qty > 0:
+
             frappe.throw(
                 f"""
                 Insufficient pending Sales Order quantity for item
                 <b>{original_row.item_name or item_code}</b>.
+
                 <br><br>
-                Required: <b>{original_qty}</b>
+
+                Required:
+                <b>{original_qty}</b>
+
                 <br>
-                Available: <b>{original_qty - remaining_qty}</b>
+
+                Available:
+                <b>{original_qty - remaining_qty}</b>
+
                 <br>
-                Missing: <b>{remaining_qty}</b>
+
+                Missing:
+                <b>{remaining_qty}</b>
                 """
             )
-
 
 
 def get_sales_orders(item_code, order_by):
@@ -297,18 +279,7 @@ def get_sales_orders(item_code, order_by):
 
 
 def append_original_row(doc, original_row):
-    """
-    Create a new Delivery Note Item row and copy the original
-    row's values.
-
-    This prevents important fields such as warehouse, UOM,
-    rate, batch, etc. from being lost when splitting.
-    """
-
     new_row = doc.append("items", {})
-
-    # Copy all fields from original row that are valid in the
-    # Delivery Note Item child table.
 
     meta = frappe.get_meta("Delivery Note Item")
 
