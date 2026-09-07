@@ -471,3 +471,20 @@ def get_item_visualizer_data(item_codes):
         result[item.item_code] = data
 
     return result
+
+
+@frappe.whitelist()
+def get_item_definition(item_group):
+
+    if not item_group:
+        return {}
+
+    if not frappe.db.exists("Item Definition", item_group):
+        return {}
+
+    return frappe.db.get_value(
+        "Item Definition",
+        item_group,
+        [f"def_{i}" for i in range(1, 11)],
+        as_dict=True
+    )

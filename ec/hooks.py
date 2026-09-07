@@ -56,6 +56,10 @@ doctype_list_js = {
     "Item": "public/js/item_list.js",
 }
 
+doctype_js = {
+    "Item": "public/js/item.js",
+}
+
 
 fixtures = [
     {
