@@ -90,20 +90,6 @@ function open_advanced_search(frm) {
 
     d.show();
 
-    // let is_populating = false;
-
-    // d.$wrapper.on("hide.bs.modal", function (e) {
-
-    //     if (is_populating) {
-
-    //         e.preventDefault();
-
-    //         frappe.throw(
-    //             __("Items are currently being populated. Please wait.")
-    //         );
-    //     }
-    // });
-
     const wrapper =
         d.fields_dict.content.$wrapper;
 
@@ -116,13 +102,13 @@ function open_advanced_search(frm) {
         ">
 
             <div>
-                <label>Style No</label>
-                <input class="form-control style-no">
+                <label>Barcode</label>
+                <input class="form-control barcode">
             </div>
 
             <div>
-                <label>Barcode</label>
-                <input class="form-control barcode">
+                <label>Style No</label>
+                <input class="form-control style-no">
             </div>
 
             <div>

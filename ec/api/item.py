@@ -294,7 +294,7 @@ def search_items(
 
     if style_no:
         item_filters.append(
-            ["Item", "item_name", "like", f"%{style_no}%"]
+            ["Item", "variant_of", "like", f"%{style_no}%"]
         )
 
     if group_name:
