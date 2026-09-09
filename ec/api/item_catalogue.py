@@ -19,6 +19,22 @@ def get_catalogue_folder():
     return ensure_catalogue_folder()
 
 
+TAGGING_MANAGER_FOLDER = "Home/Image Tagging Manager"
+
+
+def ensure_tagging_manager_folder():
+
+    if not frappe.db.exists("File", TAGGING_MANAGER_FOLDER):
+        create_new_folder("Image Tagging Manager", "Home")
+
+    return TAGGING_MANAGER_FOLDER
+
+
+@frappe.whitelist()
+def get_tagging_manager_folder():
+    return ensure_tagging_manager_folder()
+
+
 @frappe.whitelist()
 def list_catalogue_images():
 
@@ -89,6 +105,62 @@ def get_variants_for_tag(item_code, colour, colour_code):
             })
 
     matched.sort(key=lambda d: d["size"] or "")
+
+    return matched
+
+
+@frappe.whitelist()
+def get_matching_variants(item, attributes=None):
+    """Like get_variants_for_tag, but fully generalised: `attributes`
+    is any number of {"attribute": ..., "attribute_value": ...} rows
+    (0, 1, or N - however many Item Attributes exist), all of which
+    must match (AND). No attribute filter given at all returns every
+    variant under the item."""
+
+    if not item:
+        return []
+
+    if isinstance(attributes, str):
+        attributes = frappe.parse_json(attributes)
+
+    filters = {
+        a["attribute"]: a["attribute_value"]
+        for a in (attributes or [])
+        if a.get("attribute") and a.get("attribute_value")
+    }
+
+    variants = frappe.get_all(
+        "Item",
+        filters={
+            "variant_of": item,
+            "has_variants": 0
+        },
+        pluck="name"
+    )
+
+    matched = []
+
+    for variant in variants:
+
+        variant_attributes = {
+            d.attribute: d.attribute_value
+            for d in frappe.get_all(
+                "Item Variant Attribute",
+                filters={"parent": variant},
+                fields=["attribute", "attribute_value"]
+            )
+        }
+
+        if all(
+            variant_attributes.get(attribute) == value
+            for attribute, value in filters.items()
+        ):
+            matched.append({
+                "item_code": variant,
+                "attributes": variant_attributes
+            })
+
+    matched.sort(key=lambda d: sorted(d["attributes"].items()))
 
     return matched
 

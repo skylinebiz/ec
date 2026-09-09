@@ -1,0 +1,151 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-09-09 13:00:06.306082",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "item",
+  "column_break_vbjs",
+  "date",
+  "section_break_search",
+  "search_html",
+  "matched_items",
+  "section_break_images",
+  "mode",
+  "images",
+  "images_html",
+  "section_break_log",
+  "log",
+  "logs_html",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "default": "ITM-.DD.-.MM.-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "ITM-.DD.-.MM.-.YYYY.-.#####"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_search",
+   "fieldtype": "Section Break",
+   "label": "Search Item Variants"
+  },
+  {
+   "fieldname": "search_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "matched_items",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "options": "Image Tagging Manager Matched Item"
+  },
+  {
+   "fieldname": "section_break_images",
+   "fieldtype": "Section Break",
+   "label": "Images"
+  },
+  {
+   "default": "Retain",
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "label": "Mode",
+   "options": "Retain\nOverride",
+   "reqd": 1
+  },
+  {
+   "fieldname": "images",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "options": "Image Tagging Manager Image"
+  },
+  {
+   "fieldname": "images_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_log",
+   "fieldtype": "Section Break",
+   "label": "Applied Log"
+  },
+  {
+   "fieldname": "log",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "options": "Image Tagging Manager Log",
+   "read_only": 1
+  },
+  {
+   "fieldname": "logs_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "column_break_vbjs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Image Tagging Manager",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-09-09 13:23:13.039888",
+ "modified_by": "Administrator",
+ "module": "EC",
+ "name": "Image Tagging Manager",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
