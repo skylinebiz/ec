@@ -67,7 +67,7 @@
    "label": "Images"
   },
   {
-   "default": "Retain",
+   "default": "Override",
    "fieldname": "mode",
    "fieldtype": "Select",
    "label": "Mode",
@@ -120,7 +120,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-09-09 13:23:13.039888",
+ "modified": "2026-09-10 10:56:52.379626",
  "modified_by": "Administrator",
  "module": "EC",
  "name": "Image Tagging Manager",
