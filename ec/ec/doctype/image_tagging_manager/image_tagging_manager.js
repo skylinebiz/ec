@@ -137,12 +137,7 @@ async function render_search_ui(frm) {
 		return;
 	}
 
-	const attributes = await frappe.xcall("frappe.client.get_list", {
-		doctype: "Item Attribute",
-		fields: ["name"],
-		order_by: "name asc",
-		limit_page_length: 0
-	});
+	const attributes = await frappe.xcall("ec.api.item.get_item_attributes");
 
 	wrapper.html(`
 		<div class="attribute-search-fields" style="

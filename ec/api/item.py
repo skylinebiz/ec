@@ -40,6 +40,20 @@ def get_attribute_values(attribute):
         order_by="idx asc"
     )
 
+
+@frappe.whitelist()
+def get_item_attributes():
+
+    # frappe.get_all (unlike frappe.client.get_list) doesn't enforce
+    # the calling user's permissions on Item Attribute - callers only
+    # need rights on whichever doctype actually uses this (e.g. Image
+    # Tagging Manager), not on Item Attribute itself.
+    return frappe.get_all(
+        "Item Attribute",
+        fields=["name"],
+        order_by="name asc"
+    )
+
 @frappe.whitelist()
 def get_colour_values():
 
