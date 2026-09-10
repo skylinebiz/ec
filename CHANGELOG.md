@@ -2,6 +2,16 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [2.1.0] - 2026-09-10
+
+### Added
+
+- **Image Tagging Manager** — role-based permissions: `Sales User` and `Purchase User` can Create, Read, and Write; `Sales Manager` and `Purchase Manager` additionally get Submit. No Cancel, Amend, Delete, Print, Export, Email, Share, or Report access for any of the four.
+
+### Fixed
+
+- **Image Tagging Manager** — fixed `PermissionError: Insufficient Permission for Item Attribute` for users without direct access to the Item Attribute doctype (e.g. Sales/Purchase User and Manager). The attribute-search UI was calling Frappe's generic `frappe.client.get_list`, which enforces the calling user's own doctype permissions; replaced with a dedicated backend endpoint so using Image Tagging Manager no longer requires separate rights on Item Attribute.
+
 ## [2.0.0] - 2026-09-09
 
 ### Added
