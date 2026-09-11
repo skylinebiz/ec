@@ -6,7 +6,7 @@ All notable changes to the EC app are documented in this file.
 
 ### Fixed
 
-- **Item Definition** — the Item form's "Definitions" section (`custom_def_1`–`custom_def_10`) was anchored right after Item Group. Other installed apps anchor their own Item customizations at the same spot (e.g. India Compliance inserts its HSN/SAC field after Item Group too), so the Definitions section's position — and the layout around it — could shift unpredictably whenever such an app was installed or the site was migrated. It's now anchored after the core "Item Attributes" section instead, a spot no other installed app targets, so it renders in a fixed, predictable place regardless of what other apps customize on Item.
+- **Item Definition** — the Item form's "Definitions" section (`custom_def_1`–`custom_def_10`) was anchored right after Item Group. It's now anchored after the core "Item Attributes" section instead, a spot no other installed app targets, so it renders in a fixed, predictable place regardless of what other apps customize on Item.
 
 ## [2.1.0] - 2026-09-10
 
