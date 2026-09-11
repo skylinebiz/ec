@@ -1,23 +1,12 @@
-# EC v2.1.0
+# EC v2.2.0
 
 ## Highlights
 
-### Image Tagging Manager permissions
+### Fixed: Item Definition section position now stable across app installs
 
-Role-based access is now enforced:
+The "Definitions" section on the Item form (`custom_def_1`–`custom_def_10`, dynamically relabeled per Item Group by Item Definition) was anchored right after the **Item Group** field. That's also where other apps anchor their own Item customizations — India Compliance, for example, inserts its HSN/SAC field there too — so whenever such an app was installed or the site was migrated, the two competed for the same position and the Definitions section (and the fields around it) could end up reordered.
 
-| Role | Create | Read | Write | Submit |
-|---|---|---|---|---|
-| Sales User | ✅ | ✅ | ✅ | — |
-| Purchase User | ✅ | ✅ | ✅ | — |
-| Sales Manager | ✅ | ✅ | ✅ | ✅ |
-| Purchase Manager | ✅ | ✅ | ✅ | ✅ |
-
-Users get exactly Create/Read/Write, or Create/Read/Write/Submit — no Cancel, Amend, Delete, or export/print/share access for these roles.
-
-### Fixed: permission error for non-admin roles
-
-Sales and Purchase users could hit `PermissionError: Insufficient Permission for Item Attribute` when using the attribute search on Image Tagging Manager, even with full rights on the document itself. The attribute list was being fetched through Frappe's generic `frappe.client.get_list`, which checks the user's own permissions on whatever doctype is requested — Item Attribute isn't something these roles have direct access to by default. Replaced with a dedicated endpoint that doesn't require it.
+It's now anchored right after the core **Item Attributes** section instead, a position nothing else in this bench targets, so it renders in the same place regardless of what other apps customize on Item.
 
 ---
 
@@ -27,6 +16,13 @@ Sales and Purchase users could hit `PermissionError: Insufficient Permission for
 bench --site <site> migrate
 ```
 
-No manual data migration is required.
+If the Definitions section doesn't move on a site where fields were previously drag-reordered in Customize Form, check for a leftover `field_order` Property Setter on Item — it pins one frozen order ahead of any field's individual `insert_after` and needs to be cleared for the new position to take effect:
+
+```python
+frappe.db.exists("Property Setter", {"doc_type": "Item", "property": "field_order"})
+# if found:
+frappe.delete_doc("Property Setter", <name>)
+frappe.clear_cache(doctype="Item")
+```
 
 See [CHANGELOG.md](./CHANGELOG.md) for the full release history.

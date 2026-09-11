@@ -2,6 +2,12 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [2.2.0] - 2026-09-11
+
+### Fixed
+
+- **Item Definition** — the Item form's "Definitions" section (`custom_def_1`–`custom_def_10`) was anchored right after Item Group. It's now anchored after the core "Item Attributes" section instead, a spot no other installed app targets, so it renders in a fixed, predictable place regardless of what other apps customize on Item.
+
 ## [2.1.0] - 2026-09-10
 
 ### Added
