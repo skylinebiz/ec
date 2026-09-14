@@ -49,11 +49,14 @@ app_license = "mit"
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
 app_include_js = [
-    "/assets/ec/js/advanced_item_search.js"
+    "/assets/ec/js/advanced_item_search.js",
+    "/assets/ec/js/return_dialog.js"
 ]
 
 doctype_list_js = {
     "Item": "public/js/item_list.js",
+    "Delivery Note": "public/js/delivery_note.js",
+    "Purchase Invoice": "public/js/purchase_invoice.js",
 }
 
 doctype_js = {

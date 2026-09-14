@@ -2,6 +2,25 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [3.0.0] - 2026-09-14
+
+### Added
+
+- **Delivery Note Return** — a "Return" button on the Delivery Note list view opens a "Return Items" dialog for returning items without knowing which Delivery Note they were delivered on:
+  - **Customer** is picked first and gates Scan Barcode / Add Multiple Items until set.
+  - **Scan Barcode** — frappe's built-in barcode field (hardware scanner input or the camera-based scan button).
+  - **Add Multiple Items** — the same Advanced Item Search UI used on transaction item grids elsewhere in this app (Barcode/Style No/Colour/Colour Code/Size/MRP/WSP/Group Name filters, a qty per row), populating straight into the dialog's own item list instead of a form grid.
+  - **Return Order** — FIFO (default, oldest Delivery Note first) or LIFO (newest first).
+  - **Find Delivery Notes** lists every submitted Delivery Note that still has a returnable qty for each requested item, in FIFO/LIFO order — splitting the requested qty across as many source Delivery Notes as needed to cover it. Items with no (or insufficient) returnable qty stay visible as their own flagged row instead of silently disappearing.
+  - **Process All Returns** groups matches by source Delivery Note and creates + submits **one** return Delivery Note per source document — several items returned from the same Delivery Note land on a single return, not several. Built on ERPNext's own `make_sales_return()`, so taxes, transporter info, sales team, and every other standard field carry over the same way ERPNext's own Sales Return does it.
+  - The dialog cannot be dismissed via the X button, Esc, or clicking outside — only the explicit Close button — and is fully blocked while a return is being processed.
+- **Purchase Invoice Return** — the identical dialog and flow on the Purchase Invoice list view, for returning purchased items to a supplier as a Debit Note, built on ERPNext's own `make_debit_note()`.
+- Both list views' Return dialogs are driven by one shared implementation (`ec.utils.open_return_dialog`), differing only by a small per-doctype configuration.
+
+### Fixed
+
+- **Purchase Invoice Return** — returning against a stock-affecting (`update_stock`) Purchase Invoice no longer fails with "Received Qty must be equal to Accepted + Rejected Qty for Item ..."; `received_qty`/`rejected_qty` are now re-paired to the actual quantity being returned.
+
 ## [2.2.0] - 2026-09-11
 
 ### Fixed
