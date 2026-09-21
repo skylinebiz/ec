@@ -2,6 +2,16 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [3.1.0] - 2026-09-21
+
+### Added
+
+- **Purchase Receipt Return** — a "Return" button on the Purchase Receipt list view opens the same "Return Items" dialog as Delivery Note and Purchase Invoice (Supplier picked first, Scan Barcode / Add Multiple Items, FIFO/LIFO Return Order, Find Purchase Receipts, Process All Returns). Matches are grouped by source Purchase Receipt and one return Purchase Receipt is created and submitted per source document, built on ERPNext's own `make_purchase_return()`, so taxes and every other standard field carry over the same way ERPNext's own Return button does it. Accepted/Rejected qty is always re-paired to the quantity actually being returned (the full returned qty is treated as accepted), since Purchase Receipt enforces that check unconditionally.
+
+### Changed
+
+- **Return dialogs (Delivery Note, Purchase Invoice, Purchase Receipt)** — Scan Barcode now calls ERPNext's native `erpnext.stock.utils.scan_barcode` directly instead of an EC wrapper endpoint. A scan that matches nothing (or matches a warehouse rather than an item) shows a "Cannot find Item with this Barcode" alert, and scanned rows show the item code rather than the item name, since ERPNext's scan result doesn't include one.
+
 ## [3.0.0] - 2026-09-14
 
 ### Added
