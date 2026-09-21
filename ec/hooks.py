@@ -57,6 +57,7 @@ doctype_list_js = {
     "Item": "public/js/item_list.js",
     "Delivery Note": "public/js/delivery_note.js",
     "Purchase Invoice": "public/js/purchase_invoice.js",
+    "Purchase Receipt": "public/js/purchase_receipt.js",
 }
 
 doctype_js = {
