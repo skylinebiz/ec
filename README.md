@@ -51,6 +51,10 @@ A "Return" button on the Delivery Note list view opens a dialog for returning it
 
 The same "Return" dialog, on the Purchase Invoice list view, for returning purchased items to a supplier without knowing which Purchase Invoice they came in on — identical flow and identical grouping rule (Supplier picked first / Scan Barcode / Add Multiple Items via Advanced Item Search / FIFO-LIFO Return Order / Find Purchase Invoices / Process All Returns creates one debit note per source Purchase Invoice, combining multiple items from the same one), built on ERPNext's own Debit Note mapping (`make_debit_note`) instead of Sales Return.
 
+#### Purchase Receipt Return
+
+The same "Return" dialog, on the Purchase Receipt list view, built on ERPNext's own `make_purchase_return()` mapping. Since Purchase Receipt always tracks Accepted/Rejected qty (unlike Purchase Invoice, where that only applies when Update Stock is checked), every return here re-pairs `received_qty`/`rejected_qty` to the qty actually being returned, treating the full returned qty as accepted.
+
 #### Production Plan quick-populate
 
 Backing API used by Advanced Search to add items into a Production Plan's Material Request Plan, auto-filling the default active BOM, stock UOM, and description per item, and merging quantities into an existing row instead of duplicating it.
