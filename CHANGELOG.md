@@ -2,6 +2,12 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [3.2.0] - 2026-09-29
+
+### Changed
+
+- **Item Definition** — the Item form's "Def" fields (`custom_def_1`–`custom_def_10`) now hold up to 1000 characters instead of Frappe's default 140. Longer definitions (e.g. descriptions synced from Ginesys `DESC1`–`DESC6`) no longer fail the Item save with "will get truncated, as max characters allowed is 140". Requires `bench migrate` to resize the columns.
+
 ## [3.1.0] - 2026-09-21
 
 ### Added
