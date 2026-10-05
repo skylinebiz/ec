@@ -2,6 +2,18 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [4.0.0] - 2026-10-05
+
+### Added
+
+- **Style BOM Clone** — a "Style BOM Clone" button on the BOM form, shown when the item to manufacture is a variant with a Size attribute and has at least one other size (same style, Colour and Colour Code). It opens a dialog listing every other size as checkbox | Item Name | Status; the CUT size and disabled items are left out, and sizes that already have a default BOM show that BOM in Status and start unticked. **Clone** creates and submits one BOM per selected size, built on `frappe.copy_doc` and ERPNext's own BOM validation, and the Status column then shows the newly created BOM number as a link. A raw material that is itself a variant of the source size is switched to the matching size of that item when one exists; all other raw materials (including a CUT item) are copied as is. If any selected size fails, none of the BOMs are created.
+- **Style Creator: Create CUT Size** — a "Create CUT Size" checkbox (ticked by default) under Sizes. On **Add**, each colour gets one extra preview row with size `CUT`, and **Create Style** creates it as a variant like any other size.
+- **Style Creator: automatic setup** — **Create Style** now creates the `MRP` and `WSP` price lists (enabled, selling, company default currency) and the `Colour`, `Colour Code` and `Size` item attributes when they don't exist yet. Opening the dialog no longer fails when the `Colour` attribute is missing.
+
+### Changed
+
+- **Style Creator: no duplicate rows** — clicking **Add** for a style, colour, colour code and size that is already in the preview overrides that row's MRP/WSP instead of adding it again; sizes not yet in the preview are added, with CUT kept as the last size of its colour. **Create Style** also rejects two rows with the same colour, colour code and size.
+
 ## [3.2.0] - 2026-09-29
 
 ### Changed
