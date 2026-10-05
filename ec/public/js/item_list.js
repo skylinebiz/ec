@@ -62,6 +62,13 @@ function open_style_creator() {
             },
 
             {
+                fieldname: "create_cut_size",
+                label: "Create CUT Size",
+                fieldtype: "Check",
+                default: 1
+            },
+
+            {
                 fieldtype: "Column Break"
             },
 
@@ -300,23 +307,63 @@ function open_style_creator() {
             table.df.data = [];
         }
 
+        const colour = colourMap[values.colour] || values.colour;
+
         const actualWsp =
             flt(values.wsp)
                 ? flt(values.mrp) / flt(values.wsp)
                 : 0;
 
+        if (values.create_cut_size && !sizes.includes(CUT_SIZE)) {
+            sizes.push(CUT_SIZE);
+        }
+
+        const data = table.df.data;
+
+        const same_combo = row =>
+            row.style_no === values.style_no
+            && row.colour === colour
+            && row.colour_code === values.colour_code;
+
         sizes.forEach(size => {
 
-            table.df.data.push({
+            const row = {
                 style_no: values.style_no,
-                colour: colourMap[values.colour] || values.colour,
+                colour,
                 colour_code: values.colour_code,
                 colour_name: values.colour,
                 size,
                 mrp: values.mrp,
                 wsp: actualWsp
-            });
+            };
 
+            // same style, colour, colour code and size is overridden
+            const existing = data.find(r =>
+                same_combo(r) && String(r.size) === size
+            );
+
+            if (existing) {
+                Object.assign(existing, row);
+                return;
+            }
+
+            // keep CUT as the last size of its colour
+            const cut_index = size === CUT_SIZE
+                ? -1
+                : data.findIndex(r =>
+                    same_combo(r) && r.size === CUT_SIZE
+                );
+
+            if (cut_index === -1) {
+                data.push(row);
+            } else {
+                data.splice(cut_index, 0, row);
+            }
+
+        });
+
+        data.forEach((row, index) => {
+            row.idx = index + 1;
         });
 
         table.grid.refresh();
@@ -330,6 +377,8 @@ function open_style_creator() {
 }
 
 let colourMap = {};
+
+const CUT_SIZE = "CUT";
 
 async function load_colours(dialog) {
 

@@ -1,4 +1,5 @@
 import frappe
+import erpnext
 from frappe import _
 from erpnext.controllers.item_variant import create_variant
 from itertools import product
@@ -57,6 +58,9 @@ def get_item_attributes():
 @frappe.whitelist()
 def get_colour_values():
 
+    if not frappe.db.exists("Item Attribute", "Colour"):
+        return []
+
     attr = frappe.get_doc(
         "Item Attribute",
         "Colour"
@@ -83,6 +87,14 @@ def create_style(item_group, style_no, rows):
 
     if not rows:
         frappe.throw(_("No rows found"))
+
+    validate_duplicate_rows(rows)
+
+    for price_list in ("MRP", "WSP"):
+        ensure_price_list(price_list)
+
+    for attribute in ("Colour", "Colour Code", "Size"):
+        ensure_attribute(attribute)
 
     # Create Template
 
@@ -173,6 +185,40 @@ def create_style(item_group, style_no, rows):
         "variants": created
     }
 
+def validate_duplicate_rows(rows):
+
+    seen = set()
+
+    for row in rows:
+
+        key = (
+            str(row["colour_name"]).strip(),
+            str(row["colour_code"]).strip(),
+            str(row["size"]).strip()
+        )
+
+        if key in seen:
+            frappe.throw(
+                _("Duplicate entry for Colour {0}, Colour Code {1}, Size {2}").format(*key)
+            )
+
+        seen.add(key)
+
+
+def ensure_price_list(price_list):
+
+    if frappe.db.exists("Price List", price_list):
+        return
+
+    frappe.get_doc({
+        "doctype": "Price List",
+        "price_list_name": price_list,
+        "enabled": 1,
+        "selling": 1,
+        "currency": erpnext.get_default_currency()
+    }).insert(ignore_permissions=True)
+
+
 def get_or_create_variant(template, attributes):
 
     variants = frappe.get_all(
@@ -222,6 +268,17 @@ def get_or_create_variant(template, attributes):
     variant.save(ignore_permissions=True)
 
     return variant.name
+
+
+def ensure_attribute(attribute):
+
+    if frappe.db.exists("Item Attribute", attribute):
+        return
+
+    frappe.get_doc({
+        "doctype": "Item Attribute",
+        "attribute_name": attribute
+    }).insert(ignore_permissions=True)
 
 
 def ensure_attribute_value(attribute, value):
