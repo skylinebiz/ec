@@ -2,6 +2,11 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [4.0.1] - 2026-10-06
+
+### Added
+- Track Changes (version history) enabled, so who changed what, and when — show up in each document's timeline.
+
 ## [4.0.0] - 2026-10-05
 
 ### Added
