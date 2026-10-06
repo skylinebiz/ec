@@ -120,7 +120,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-09-10 13:48:01.867009",
+ "modified": "2026-10-06 14:18:43.680945",
  "modified_by": "Administrator",
  "module": "EC",
  "name": "Image Tagging Manager",
@@ -179,5 +179,6 @@
  "rows_threshold_for_grid_search": 20,
  "sort_field": "creation",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }
