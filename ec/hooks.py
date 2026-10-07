@@ -62,6 +62,7 @@ doctype_list_js = {
 
 doctype_js = {
     "Item": "public/js/item.js",
+    "BOM": "public/js/bom.js",
 }
 
 
