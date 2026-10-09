@@ -176,6 +176,9 @@ def get_raw_commands(name, print_format):
 
     from frappe.www.printview import get_print_format_doc, get_rendered_template
 
+    if not print_format:
+        frappe.throw(_("Please select a Barcode Print Format"))
+
     doc = frappe.get_doc("Barcode Print", name)
     doc.check_permission("print")
 

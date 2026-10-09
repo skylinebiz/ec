@@ -27,6 +27,10 @@ const LOCAL_DEFAULTS = {
 	printer: "ec_barcode_printer",
 };
 
+// last printer list seen from QZ Tray, offered in the Printer field
+// without connecting to QZ Tray on every form load
+const PRINTERS_CACHE = "ec_barcode_printers";
+
 frappe.ui.form.on("Barcode Print", {
 
 	setup(frm) {
@@ -57,6 +61,8 @@ frappe.ui.form.on("Barcode Print", {
 
 	refresh(frm) {
 
+		set_printer_options(frm, get_cached_printers());
+
 		ITEM_SOURCES.forEach((source) => {
 
 			if (!frappe.model.can_read(source.source_doctype)) return;
@@ -72,6 +78,13 @@ frappe.ui.form.on("Barcode Print", {
 
 		frm.add_custom_button(__("Print Barcodes"), () => print_barcodes(frm))
 			.addClass("btn-primary");
+	},
+
+	printer(frm) {
+
+		if (frm.doc.printer) {
+			localStorage.setItem(LOCAL_DEFAULTS.printer, frm.doc.printer);
+		}
 	},
 
 	print_format(frm) {
@@ -191,11 +204,40 @@ function add_source_items(frm, items) {
 	});
 }
 
-function select_printer(frm) {
+function get_cached_printers() {
+
+	try {
+		return JSON.parse(localStorage.getItem(PRINTERS_CACHE)) || [];
+	} catch (e) {
+		return [];
+	}
+}
+
+function set_printer_options(frm, printers) {
+
+	frm.set_df_property("printer", "options", printers);
+}
+
+function get_printers(frm) {
 
 	return frappe.ui.form.qz_get_printer_list().then((printers) => {
 
 		printers = [].concat(printers || []);
+
+		if (printers.length) {
+			localStorage.setItem(PRINTERS_CACHE, JSON.stringify(printers));
+			set_printer_options(frm, printers);
+		}
+
+		return printers;
+	});
+}
+
+// for_print: asked while printing because the entry has no printer.
+// Resolves empty when dismissed.
+function select_printer(frm, for_print) {
+
+	return get_printers(frm).then((printers) => {
 
 		if (!printers.length) {
 			frappe.msgprint(__("No printers found in QZ Tray"));
@@ -204,8 +246,10 @@ function select_printer(frm) {
 
 		return new Promise((resolve) => {
 
+			let chosen;
+
 			const d = new frappe.ui.Dialog({
-				title: __("Select Printer"),
+				title: for_print ? __("Select Printer to Continue") : __("Select Printer"),
 				fields: [
 					{
 						fieldtype: "Select",
@@ -218,16 +262,22 @@ function select_printer(frm) {
 						reqd: 1,
 					},
 				],
-				primary_action_label: __("Select"),
+				primary_action_label: for_print ? __("Continue") : __("Select"),
 				primary_action(values) {
+					chosen = values.printer;
 					d.hide();
-
-					localStorage.setItem(LOCAL_DEFAULTS.printer, values.printer);
-
-					frm.set_value("printer", values.printer)
-						.then(() => resolve(values.printer));
 				},
 			});
+
+			d.onhide = () => {
+
+				if (!chosen) {
+					resolve();
+					return;
+				}
+
+				frm.set_value("printer", chosen).then(() => resolve(chosen));
+			};
 
 			d.show();
 		});
@@ -241,15 +291,16 @@ async function print_barcodes(frm) {
 		return;
 	}
 
-	if (!(frm.doc.items || []).some((row) => row.item_code && cint(row.qty) > 0)) {
+	const rows = (frm.doc.items || []).filter((row) => row.item_code && cint(row.qty) > 0);
+
+	if (!rows.length) {
 		frappe.msgprint(__("Please add items with Label Qty"));
 		return;
 	}
 
 	if (!frm.doc.printer) {
-		await select_printer(frm);
 
-		if (!frm.doc.printer) return;
+		if (!(await select_printer(frm, true))) return;
 	}
 
 	if (frm.is_dirty()) {
@@ -266,11 +317,23 @@ async function print_barcodes(frm) {
 		freeze_message: __("Preparing labels..."),
 	});
 
+	const printer = frm.doc.printer;
+
 	try {
 
 		await frappe.ui.form.qz_connect();
 
-		const config = qz.configs.create(frm.doc.printer);
+		// a printer saved from another computer may not exist on this one
+		const available = [].concat((await qz.printers.find()) || []);
+
+		if (!available.includes(printer)) {
+			frappe.msgprint(
+				__("Printer {0} not found on this computer. Please select another printer.", [printer])
+			);
+			return;
+		}
+
+		const config = qz.configs.create(printer);
 
 		for (const commands of r.message || []) {
 			await qz.print(config, [commands]);

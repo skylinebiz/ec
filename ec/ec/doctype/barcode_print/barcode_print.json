@@ -46,12 +46,11 @@
    "fieldtype": "Column Break"
   },
   {
-   "description": "QZ Tray printer on this computer. Use Select Printer to change it.",
+   "description": "QZ Tray printer for this entry. Use Select Printer to load the printers on this computer.",
    "fieldname": "printer",
-   "fieldtype": "Data",
+   "fieldtype": "Autocomplete",
    "label": "Printer",
-   "no_copy": 1,
-   "read_only": 1
+   "no_copy": 1
   },
   {
    "fieldname": "section_break_items",
@@ -112,7 +111,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-07 15:00:00.000000",
+ "modified": "2026-10-09 17:00:00.000000",
  "modified_by": "Administrator",
  "module": "EC",
  "name": "Barcode Print",
