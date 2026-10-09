@@ -2,6 +2,20 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [4.1.0] - 2026-10-09
+
+### Added
+
+- **Barcode Print** — a new doctype for printing barcode labels straight to a label printer through QZ Tray (Frappe's raw printing), without going through the Print view:
+  - **Items** — each row holds an Item and a Label Qty; Barcode, Style No, Colour, Colour Code, Size and MRP (from the `MRP` price list) are filled in automatically when the item is added.
+  - **Advanced Search** — the same Advanced Item Search used on transaction item grids elsewhere in this app; enter a qty against several items and **Populate** adds them all at once.
+  - **Get Items From** — pick one or more Production Lots (EC Lot), Process Lots (EC Process Lot) or Production Plans and their items are added with the source document noted on each row. The two lot options appear only when the EC Production app is installed. Lots hold one row per operation for the same item, so the label qty is the largest single-operation qty for that item, not the sum of every operation.
+  - **Barcode Print Format** — lists only raw printing Print Formats made for Barcode Print.
+  - **Select Printer** — lists the printers QZ Tray can see on the computer. The chosen printer and print format are remembered per computer.
+  - **Print Barcodes** — saves the document, renders the selected format and sends it to the printer, in batches of 100 item rows so large prints don't overrun the printer buffer. Last Printed On and Print Count are updated after each print.
+- **QR Label TSPL 73x38 2 Up** — a raw print format for Barcode Print: a 73.5 × 38 mm TSPL label, two across, with a QR code of the item's barcode and the barcode text below it (the item code is used when an item has no barcode). An item's odd label shares a row with the first label of the next item, so no label position is wasted.
+- **Barcode Print auto-delete** — Barcode Print entries are removed automatically once they are older than a set number of days (30 by default, counted from when the entry was created). The number of days is editable under Log Settings. Requires `bench migrate`.
+
 ## [4.0.1] - 2026-10-06
 
 ### Added
