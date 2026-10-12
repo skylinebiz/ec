@@ -2,6 +2,12 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [4.2.0] - 2026-10-12
+
+### Changed
+
+- **Advanced Search results as a data table** — on transaction item grids (any form whose Items table has an Item Code column, such as Sales Order, Quotation, Delivery Note, Purchase Order), the Advanced Search results now appear in a data table instead of a plain HTML table. Columns can be sorted and filtered from their headings, and the Item column is wider so long item names are readable. A qty typed against an item is kept while the results are sorted or filtered, and **Populate** clears every qty once the items have been added. Still capped at 50 records.
+
 ## [4.1.0] - 2026-10-09
 
 ### Added
