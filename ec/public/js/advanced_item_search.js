@@ -180,6 +180,45 @@ function open_advanced_search(frm) {
 
 function bind_search(frm, wrapper, dialog) {
 
+    let datatable = null;
+    let search_items = [];
+
+    // qty typed per original row index (survives sort / filter re-render)
+    let qty_map = {};
+
+    const qty_col = () => datatable.datamanager.getColumnIndexById("qty");
+
+    const reset_qty = () => {
+
+        qty_map = {};
+
+        wrapper.find(".qty-input").val(0);
+
+        if (!datatable) return;
+
+        const col = qty_col();
+
+        datatable.datamanager.rows.forEach(row => {
+            datatable.datamanager.updateCell(
+                col, row[0].rowIndex, { content: 0 }
+            );
+        });
+    };
+
+    wrapper.on("input change", ".qty-input", function () {
+
+        if (!datatable) return;
+
+        const idx = cint($(this).attr("data-row"));
+        const val = cint($(this).val());
+
+        qty_map[idx] = val;
+
+        datatable.datamanager.updateCell(
+            qty_col(), idx, { content: val }
+        );
+    });
+
     wrapper.on("click", ".search-btn", () => {
 
         const filters = {
@@ -237,62 +276,10 @@ function bind_search(frm, wrapper, dialog) {
                     return;
                 }
 
-                let html = `
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Barcode</th>
-                            <th>Colour</th>
-                            <th>Size</th>
-                            <th>MRP</th>
-                            <th>WSP</th>
-                            <th width="120">Qty</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+                wrapper.find(".search-results").html(`
+                <div class="results-table"></div>
 
-                items.forEach(item => {
-
-                    html += `
-                    <tr
-                        data-item="${item.item_code}"
-                        data-barcode="${item.barcode || ''}"
-                    >
-                        <td>${item.item_code}</td>
-
-                        <td>${item.barcode || ""}</td>
-
-                        <td>${item.colour || ""}</td>
-
-                        <td>${item.size || ""}</td>
-
-                        <td>${item.mrp || ""}</td>
-
-                        <td>
-                            ${item.wsp
-                            ? flt(item.wsp, 3).toFixed(3)
-                            : "0.000"}
-                        </td>
-
-                        <td>
-                            <input
-                                type="number"
-                                min="0"
-                                value="0"
-                                class="form-control qty-input"
-                            >
-                        </td>
-                    </tr>
-                `;
-                });
-
-                html += `
-                    </tbody>
-                </table>
-
-                <div class="text-muted mb-2">
+                <div class="text-muted mt-2 mb-2">
                     Showing ${items.length} record(s)
                     (maximum 50)
                 </div>
@@ -303,10 +290,61 @@ function bind_search(frm, wrapper, dialog) {
                         Populate
                     </button>
                 </div>
-            `;
+            `);
 
-                wrapper.find(".search-results")
-                    .html(html);
+                search_items = items;
+                qty_map = {};
+
+                datatable = new frappe.DataTable(
+                    wrapper.find(".results-table").get(0),
+                    {
+                        columns: [
+                            { id: "item_code", name: __("Item"), editable: false, width: 260 },
+                            { id: "barcode", name: __("Barcode"), editable: false, width: 140 },
+                            { id: "colour", name: __("Colour"), editable: false, width: 120 },
+                            { id: "size", name: __("Size"), editable: false, width: 80 },
+                            { id: "mrp", name: __("MRP"), editable: false, width: 90 },
+                            { id: "wsp", name: __("WSP"), editable: false, width: 90 },
+                            {
+                                id: "qty",
+                                name: __("Qty"),
+                                editable: false,
+                                width: 120,
+                                format: (value, row) => `
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        data-row="${row[0].rowIndex}"
+                                        value="${qty_map[row[0].rowIndex] || 0}"
+                                        class="form-control qty-input"
+                                    >`
+                            }
+                        ].map(col => ({
+                            format: value => frappe.utils.escape_html(
+                                value === null || value === undefined
+                                    ? ""
+                                    : String(value)
+                            ),
+                            ...col
+                        })),
+                        data: items.map(item => [
+                            item.item_code,
+                            item.barcode || "",
+                            item.colour || "",
+                            item.size || "",
+                            item.mrp || "",
+                            item.wsp
+                                ? flt(item.wsp, 3).toFixed(3)
+                                : "0.000",
+                            0
+                        ]),
+                        disableReorderColumn: true,
+                        inlineFilters: true,
+                        layout: "fluid",
+                        cellHeight: 40,
+                        noDataMessage: __("No records found")
+                    }
+                );
             },
 
             error() {
@@ -345,22 +383,23 @@ function bind_search(frm, wrapper, dialog) {
 
             const selected_items = [];
 
-            wrapper.find("tbody tr").each(function () {
+            if (datatable) {
 
-                const qty = cint(
-                    $(this)
-                        .find(".qty-input")
-                        .val()
-                );
+                datatable.datamanager.rows.forEach(row => {
 
-                if (!qty) return;
+                    const qty = cint(qty_map[row[0].rowIndex]);
 
-                selected_items.push({
-                    item_code: $(this).attr("data-item"),
-                    barcode: $(this).attr("data-barcode"),
-                    qty
+                    if (!qty) return;
+
+                    const item = search_items[row[0].rowIndex];
+
+                    selected_items.push({
+                        item_code: item.item_code,
+                        barcode: item.barcode || "",
+                        qty
+                    });
                 });
-            });
+            }
 
             if (!selected_items.length) {
 
@@ -475,7 +514,7 @@ function bind_search(frm, wrapper, dialog) {
                                 indicator: "green"
 
                             });
-                            wrapper.find(".qty-input").val(0);
+                            reset_qty();
 
                         } finally {
 
@@ -600,7 +639,7 @@ function bind_search(frm, wrapper, dialog) {
                     indicator: "green"
                 });
 
-                wrapper.find(".qty-input").val(0);
+                reset_qty();
 
             } catch (e) {
 
@@ -627,7 +666,7 @@ function bind_search(frm, wrapper, dialog) {
                         `Completed ${inserted} of ${total}`
                     );
 
-                wrapper.find(".qty-input").val(0);
+                reset_qty();
             }
         }
     );
