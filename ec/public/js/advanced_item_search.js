@@ -1,37 +1,81 @@
 frappe.ui.form.on("*", {
     refresh(frm) {
 
-        const table_field = Object.values(frm.fields_dict || {}).find(
-            field =>
-                field.df.fieldtype === "Table"
-                && field.grid
-                && field.grid.docfields.some(
-                    df => df.fieldname === "item_code"
-                )
-        );
+        console.log("Current Doctype:", frm.doctype);
 
-        if (!table_field) return;
+        let table_field = Object.values(frm.fields_dict || {}).find(field => {
+
+            if (field.df.fieldtype !== "Table") {
+                return false;
+            }
+
+            const grid = field.grid;
+
+            if (!grid) {
+
+                return false;
+            }
+
+            const has_item_code = grid.docfields.some(
+                df => df.fieldname === "item_code"
+            );
+
+            return has_item_code;
+        });
+
+        if (!table_field) {
+
+            return;
+        }
 
         const grid = table_field.grid;
-        const fieldname = table_field.df.fieldname;
 
-        // Native grid API: renders standard Frappe grid buttons and reuses
-        // them on later refreshes (no duplicate-button guard needed).
-        const $advanced_search = grid.add_custom_button(
-            __("Advanced Search"),
-            () => open_advanced_search(frm, fieldname)
+        if (
+            grid.wrapper.find(".advanced-search-btn").length
+        ) {
+            console.log(
+                "Buttons already exist. Skipping."
+            );
+            return;
+        }
+
+        grid.wrapper.find(".grid-buttons").append(
+            frappe.ui.button.html({
+                label: __("Advanced Search"),
+                size: "sm",
+                css_class: "advanced-search-btn"
+            })
         );
 
-        const $item_visualizer = grid.add_custom_button(
-            __("Item Visualizer"),
-            () => open_item_visualizer(frm, fieldname)
+        grid.wrapper.find(".grid-buttons").append(
+            frappe.ui.button.html({
+                label: __("Item Visualizer"),
+                size: "sm",
+                css_class: "item-visualizer-btn"
+            })
         );
 
-        // add_custom_button() prepends; place both after "Add multiple".
-        const $anchor = grid.wrapper.find(".grid-add-multiple-rows");
+        grid.wrapper.on(
+            "click",
+            ".advanced-search-btn",
+            () => {
+                open_advanced_search(
+                    frm,
+                    table_field.df.fieldname
+                );
+            }
+        );
 
-        $advanced_search.insertAfter($anchor);
-        $item_visualizer.insertAfter($advanced_search);
+        grid.wrapper.on(
+            "click",
+            ".item-visualizer-btn",
+            () => {
+                open_item_visualizer(
+                    frm,
+                    table_field.df.fieldname
+                );
+            }
+        );
     }
 });
 
