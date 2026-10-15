@@ -452,6 +452,13 @@ function bind_search(frm, wrapper, dialog) {
 
             if (is_populating) return;
 
+            // commit a Qty cell that is still in edit mode, otherwise its
+            // typed value is not yet in the datatable and the row is skipped
+            if (datatable && datatable.cellmanager.$editingCell) {
+                await datatable.cellmanager.submitEditing();
+                datatable.cellmanager.deactivateEditing(false);
+            }
+
             const selected_items = [];
 
             if (datatable) {
