@@ -2,6 +2,14 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [4.3.0] - 2026-10-15
+
+### Changed
+
+- **Advanced Search: quantity entry from the keyboard** — in the Advanced Search results, the **Qty** column is now an editable cell of the data table. Click a Qty cell (or type a number on a selected one) to enter a quantity; **Tab** or **Down** saves it and opens the Qty of the next row, **Shift+Tab** or **Up** goes back to the previous row. The Qty box opens empty with the number selected, so typing replaces the 0.
+- **Advanced Search: Populate keeps the row being edited** — a quantity still being typed or in edit mode is no longer skipped.
+- **Advanced Search and Item Visualizer buttons** — the two buttons on item grids are now built with Frappe's own button component, so they match the height and styling of **Add row** and **Add multiple**.
+
 ## [4.2.0] - 2026-10-12
 
 ### Changed
