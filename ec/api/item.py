@@ -353,6 +353,7 @@ def update_price(item_code, price_list, rate):
 @frappe.whitelist()
 def search_items(
     style_no=None,
+    barcode=None,
     colour=None,
     colour_code=None,
     size=None,
@@ -361,102 +362,119 @@ def search_items(
     group_name=None,
     limit_page_length=50
 ):
-    item_filters = []
-
-    if style_no:
-        item_filters.append(
-            ["Item", "variant_of", "like", f"%{style_no}%"]
-        )
-
-    if group_name:
-        item_filters.append(
-            ["Item", "item_group", "like", f"%{group_name}%"]
-        )
+    """
+    Every filter is applied before the limit, so the limit only trims real
+    matches. Text filters are case-insensitive "contains" matches;
+    MRP / WSP match the exact price.
+    """
 
     limit_page_length = cint(limit_page_length) or 50
+
+    def has(value):
+        return value not in (None, "") and str(value).strip()
+
+    item_filters = [["has_variants", "=", 0], ["disabled", "=", 0]]
+
+    if has(style_no):
+        item_filters.append(["variant_of", "like", f"%{style_no.strip()}%"])
+
+    if has(group_name):
+        item_filters.append(["item_group", "like", f"%{group_name.strip()}%"])
+
+    # Filters held on child tables / Item Price each give the set of Items
+    # that match; an Item must be in every set.
+    matched = []
+
+    if has(barcode):
+        matched.append(set(frappe.get_all(
+            "Item Barcode",
+            filters={"barcode": ["like", f"%{barcode.strip()}%"]},
+            pluck="parent",
+        )))
+
+    for attribute, value in (
+        ("Colour", colour),
+        ("Colour Code", colour_code),
+        ("Size", size),
+    ):
+        if has(value):
+            matched.append(set(frappe.get_all(
+                "Item Variant Attribute",
+                filters={
+                    "attribute": attribute,
+                    "attribute_value": ["like", f"%{value.strip()}%"],
+                },
+                pluck="parent",
+            )))
+
+    for price_list, value in (("MRP", mrp), ("WSP", wsp)):
+        if has(value):
+            matched.append(set(frappe.get_all(
+                "Item Price",
+                filters={"price_list": price_list, "price_list_rate": flt(value)},
+                pluck="item_code",
+            )))
+
+    if matched:
+        names = set.intersection(*matched)
+
+        if not names:
+            return []
+
+        item_filters.append(["name", "in", list(names)])
+
     items = frappe.get_all(
         "Item",
-        filters=[
-            *item_filters,
-            ["Item", "has_variants", "=", 0]
-        ],
-        fields=[
-            "name",
-            "item_name",
-            "item_group",
-        ],
+        filters=item_filters,
+        fields=["name", "item_name", "item_group"],
+        order_by="variant_of asc, name asc",
         limit_page_length=limit_page_length,
     )
 
-    result = []
+    if not items:
+        return []
 
-    for item in items:
+    names = [item.name for item in items]
 
-        attributes = {
-            d.attribute: d.attribute_value
-            for d in frappe.get_all(
-                "Item Variant Attribute",
-                filters={"parent": item.name},
-                fields=["attribute", "attribute_value"],
-            )
-        }
+    attributes = {}
+    for d in frappe.get_all(
+        "Item Variant Attribute",
+        filters={"parent": ["in", names]},
+        fields=["parent", "attribute", "attribute_value"],
+    ):
+        attributes.setdefault(d.parent, {})[d.attribute] = d.attribute_value
 
-        item_colour = attributes.get("Colour")
-        item_colour_code = attributes.get("Colour Code")
-        item_size = attributes.get("Size")
+    prices = {}
+    for d in frappe.get_all(
+        "Item Price",
+        filters={"item_code": ["in", names], "price_list": ["in", ["MRP", "WSP"]]},
+        fields=["item_code", "price_list", "price_list_rate"],
+    ):
+        prices.setdefault(d.item_code, {}).setdefault(d.price_list, d.price_list_rate)
 
-        if colour and colour.lower() not in (item_colour or "").lower():
-            continue
+    barcodes = {}
+    for d in frappe.get_all(
+        "Item Barcode",
+        filters={"parent": ["in", names]},
+        fields=["parent", "barcode"],
+        order_by="idx asc",
+    ):
+        barcodes.setdefault(d.parent, d.barcode)
 
-        if colour_code and colour_code.lower() not in (item_colour_code or "").lower():
-            continue
-
-        if size and size.lower() not in (item_size or "").lower():
-            continue
-
-        mrp_price = frappe.db.get_value(
-            "Item Price",
-            {
-                "item_code": item.name,
-                "price_list": "MRP",
-            },
-            "price_list_rate",
-        )
-
-        wsp_price = frappe.db.get_value(
-            "Item Price",
-            {
-                "item_code": item.name,
-                "price_list": "WSP",
-            },
-            "price_list_rate",
-        )
-
-        if mrp and flt(mrp_price) != flt(mrp):
-            continue
-
-        if wsp and flt(wsp_price) != flt(wsp):
-            continue
-
-        barcode = frappe.db.get_value(
-            "Item Barcode",
-            {"parent": item.name},
-            "barcode"
-        )
-
-        result.append({
+    return [
+        {
             "item_code": item.name,
             "item_name": item.item_name,
             "item_group": item.item_group,
-            "colour": item_colour,
-            "colour_code": item_colour_code,
-            "size": item_size,
-            "barcode": barcode,
-            "mrp": mrp_price,
-            "wsp": wsp_price,
-        })
-
-    return result
+            "colour": attributes.get(item.name, {}).get("Colour"),
+            "colour_code": attributes.get(item.name, {}).get("Colour Code"),
+            "size": attributes.get(item.name, {}).get("Size"),
+            "barcode": barcodes.get(item.name),
+            "mrp": prices.get(item.name, {}).get("MRP"),
+            "wsp": prices.get(item.name, {}).get("WSP"),
+        }
+        for item in items
+    ]
 
 
 @frappe.whitelist()
