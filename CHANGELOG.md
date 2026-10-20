@@ -2,6 +2,20 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [4.3.0] - 2026-10-15
+
+### Changed
+
+- **Advanced Search: quantity entry from the keyboard** — in the Advanced Search results, the **Qty** column is now an editable cell of the data table. Click a Qty cell (or type a number on a selected one) to enter a quantity; **Tab** or **Down** saves it and opens the Qty of the next row, **Shift+Tab** or **Up** goes back to the previous row. The Qty box opens empty with the number selected, so typing replaces the 0.
+- **Advanced Search: Populate keeps the row being edited** — a quantity still being typed or in edit mode is no longer skipped.
+- **Advanced Search and Item Visualizer buttons** — the two buttons on item grids are now built with Frappe's own button component, so they match the height and styling of **Add row** and **Add multiple**.
+- **Advanced Search is faster and cleaner** — attributes, prices and barcodes are loaded in bulk for the result rows instead of per item, and disabled items are no longer listed. Results are sorted by style, then item code.
+
+### Fixed
+
+- **Advanced Search: Barcode filter** — the Barcode box was sent to the server but never used, so searching a barcode returned the first 50 items instead of the match. It now filters (contains match) and finds the item.
+- **Advanced Search: missing results** — the 50-row limit was applied before the Colour, Colour Code, Size, MRP and WSP filters, so a style with many variants lost matches (e.g. K16267 + BE/PT showed 6 of 18). Every filter now runs in the database query and the limit applies only to matching items.
+
 ## [4.2.0] - 2026-10-12
 
 ### Changed

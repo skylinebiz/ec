@@ -39,17 +39,21 @@ frappe.ui.form.on("*", {
             return;
         }
 
-        grid.wrapper.find(".grid-buttons").append(`
-            <button class="btn btn-xs btn-secondary advanced-search-btn">
-                Advanced Search
-            </button>
-        `);
+        grid.wrapper.find(".grid-buttons").append(
+            frappe.ui.button.html({
+                label: __("Advanced Search"),
+                size: "sm",
+                css_class: "advanced-search-btn"
+            })
+        );
 
-        grid.wrapper.find(".grid-buttons").append(`
-            <button class="btn btn-xs btn-secondary item-visualizer-btn">
-                Item Visualizer
-            </button>
-        `);
+        grid.wrapper.find(".grid-buttons").append(
+            frappe.ui.button.html({
+                label: __("Item Visualizer"),
+                size: "sm",
+                css_class: "item-visualizer-btn"
+            })
+        );
 
         grid.wrapper.on(
             "click",
@@ -172,6 +176,38 @@ function open_advanced_search(frm) {
 
         </div>
 
+        <style>
+            .results-table .dt-cell--editing {
+                padding: 0;
+            }
+
+            .results-table .dt-cell--editing .dt-cell__content {
+                padding: 0;
+            }
+
+            .results-table .dt-input {
+                width: 100%;
+                height: 100%;
+                box-sizing: border-box;
+                padding: 0 var(--padding-sm, 8px);
+                border: 0;
+                border-radius: 0;
+                background: var(--control-bg, #f3f3f3);
+                color: var(--text-color);
+                text-align: right;
+                font-size: inherit;
+                outline: none;
+                box-shadow: inset 0 0 0 1px var(--primary, #2490ef);
+                -moz-appearance: textfield;
+            }
+
+            .results-table .dt-input::-webkit-outer-spin-button,
+            .results-table .dt-input::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+        </style>
+
         <div class="search-results mt-4"></div>
     `);
 
@@ -183,41 +219,22 @@ function bind_search(frm, wrapper, dialog) {
     let datatable = null;
     let search_items = [];
 
-    // qty typed per original row index (survives sort / filter re-render)
-    let qty_map = {};
-
+    // Qty is a native (editable) datatable cell: Tab / arrow keys move
+    // focus, Enter or typing edits, and the value lives in the datatable.
     const qty_col = () => datatable.datamanager.getColumnIndexById("qty");
 
     const reset_qty = () => {
-
-        qty_map = {};
-
-        wrapper.find(".qty-input").val(0);
 
         if (!datatable) return;
 
         const col = qty_col();
 
         datatable.datamanager.rows.forEach(row => {
-            datatable.datamanager.updateCell(
-                col, row[0].rowIndex, { content: 0 }
+            datatable.cellmanager.updateCell(
+                col, row[0].rowIndex, 0, true
             );
         });
     };
-
-    wrapper.on("input change", ".qty-input", function () {
-
-        if (!datatable) return;
-
-        const idx = cint($(this).attr("data-row"));
-        const val = cint($(this).val());
-
-        qty_map[idx] = val;
-
-        datatable.datamanager.updateCell(
-            qty_col(), idx, { content: val }
-        );
-    });
 
     wrapper.on("click", ".search-btn", () => {
 
@@ -293,32 +310,17 @@ function bind_search(frm, wrapper, dialog) {
             `);
 
                 search_items = items;
-                qty_map = {};
-
                 datatable = new frappe.DataTable(
                     wrapper.find(".results-table").get(0),
                     {
                         columns: [
-                            { id: "item_code", name: __("Item"), editable: false, width: 260 },
-                            { id: "barcode", name: __("Barcode"), editable: false, width: 140 },
-                            { id: "colour", name: __("Colour"), editable: false, width: 120 },
-                            { id: "size", name: __("Size"), editable: false, width: 80 },
-                            { id: "mrp", name: __("MRP"), editable: false, width: 90 },
-                            { id: "wsp", name: __("WSP"), editable: false, width: 90 },
-                            {
-                                id: "qty",
-                                name: __("Qty"),
-                                editable: false,
-                                width: 120,
-                                format: (value, row) => `
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        data-row="${row[0].rowIndex}"
-                                        value="${qty_map[row[0].rowIndex] || 0}"
-                                        class="form-control qty-input"
-                                    >`
-                            }
+                            { id: "item_code", focusable: false, name: __("Item"), editable: false, width: 260 },
+                            { id: "barcode", focusable: false, name: __("Barcode"), editable: false, width: 140 },
+                            { id: "colour", focusable: false, name: __("Colour"), editable: false, width: 120 },
+                            { id: "size", focusable: false, name: __("Size"), editable: false, width: 80 },
+                            { id: "mrp", focusable: false, name: __("MRP"), editable: false, width: 90 },
+                            { id: "wsp", focusable: false, name: __("WSP"), editable: false, width: 90 },
+                            { id: "qty", name: __("Qty"), editable: true, width: 120 }
                         ].map(col => ({
                             format: value => frappe.utils.escape_html(
                                 value === null || value === undefined
@@ -339,12 +341,125 @@ function bind_search(frm, wrapper, dialog) {
                             0
                         ]),
                         disableReorderColumn: true,
+                        // number input editor for Qty (native editing hook)
+                        getEditor(colIndex, rowIndex, value, parent, column) {
+
+                            if (column.id !== "qty") return undefined;
+
+                            const $input = $(`
+                                <input
+                                    type="number"
+                                    min="0"
+                                    class="dt-input"
+                                >
+                            `).appendTo(parent);
+
+                            return {
+                                initValue(val) {
+                                    $input.val(cint(val) ? val : "");
+                                    $input.trigger("focus").trigger("select");
+                                },
+                                getValue() {
+                                    return String(cint($input.val()));
+                                },
+                                setValue() {}
+                            };
+                        },
                         inlineFilters: true,
                         layout: "fluid",
                         cellHeight: 40,
                         noDataMessage: __("No records found")
                     }
                 );
+
+                // Qty keyboard flow: Tab / Down -> next row's Qty, Shift+Tab / Up
+                // -> previous row's Qty, each opened straight in edit mode.
+                const results_el = wrapper.find(".results-table").get(0);
+
+                if (results_el.__qty_nav) {
+                    results_el.removeEventListener(
+                        "keydown", results_el.__qty_nav, true
+                    );
+                }
+
+                results_el.__qty_nav = e => {
+
+                    const cm = datatable.cellmanager;
+                    const $cell = cm.$editingCell || cm.$focusedCell;
+
+                    if (
+                        !$cell
+                        || cint($cell.dataset.colIndex) !== qty_col()
+                    ) return;
+
+                    let dir = null;
+
+                    if (e.key === "Tab") dir = e.shiftKey ? "up" : "down";
+                    else if (e.key === "ArrowDown") dir = "down";
+                    else if (e.key === "ArrowUp") dir = "up";
+
+                    if (!dir) return;
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const $next = dir === "down"
+                        ? cm.getBelowCell$($cell)
+                        : cm.getAboveCell$($cell);
+
+                    cm.deactivateEditing();
+
+                    // wait for the pending commit to finish before moving
+                    setTimeout(() => {
+                        const $target = $next || $cell;
+                        cm.focusCell($target);
+                        cm.activateEditing($target);
+                    }, 0);
+                };
+
+                results_el.addEventListener(
+                    "keydown", results_el.__qty_nav, true
+                );
+
+                // a click on a Qty cell edits it right away
+                wrapper.find(".results-table").off("click.qty")
+                    .on("click.qty", ".dt-cell", function () {
+
+                        const cm = datatable.cellmanager;
+
+                        if (
+                            cint(this.dataset.colIndex) !== qty_col()
+                            || cm.$editingCell === this
+                        ) return;
+
+                        setTimeout(() => {
+                            cm.focusCell(this);
+                            cm.activateEditing(this);
+                        }, 0);
+                    });
+
+                // type a number on a focused Qty cell to start editing
+                // (Tab / arrows / Enter are handled natively by DataTable)
+                wrapper.find(".results-table").off("keydown.qty")
+                    .on("keydown.qty", e => {
+
+                        const cm = datatable.cellmanager;
+                        const $cell = cm.$focusedCell;
+
+                        if (
+                            !$cell || cm.$editingCell
+                            || e.ctrlKey || e.metaKey || e.altKey
+                            || !/^[0-9]$/.test(e.key)
+                            || cint($cell.dataset.colIndex) !== qty_col()
+                        ) return;
+
+                        e.preventDefault();
+
+                        cm.activateEditing($cell);
+
+                        $($cell).find("input.dt-input")
+                            .val(e.key);
+                    });
             },
 
             error() {
@@ -381,13 +496,20 @@ function bind_search(frm, wrapper, dialog) {
 
             if (is_populating) return;
 
+            // commit a Qty cell that is still in edit mode, otherwise its
+            // typed value is not yet in the datatable and the row is skipped
+            if (datatable && datatable.cellmanager.$editingCell) {
+                await datatable.cellmanager.submitEditing();
+                datatable.cellmanager.deactivateEditing(false);
+            }
+
             const selected_items = [];
 
             if (datatable) {
 
                 datatable.datamanager.rows.forEach(row => {
 
-                    const qty = cint(qty_map[row[0].rowIndex]);
+                    const qty = cint(row[qty_col()].content);
 
                     if (!qty) return;
 

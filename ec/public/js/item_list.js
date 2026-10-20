@@ -1,5 +1,13 @@
+// Keep the onload another app has already set (e.g. ginesys_migration's
+// "Sync Ginesys Data" button) instead of replacing it
+const previous_item_list_onload = (frappe.listview_settings["Item"] || {}).onload;
+
 frappe.listview_settings["Item"] = {
     onload(listview) {
+        if (previous_item_list_onload) {
+            previous_item_list_onload.call(this, listview);
+        }
+
         listview.page.add_inner_button(
             __("Style Creator"),
             () => {
