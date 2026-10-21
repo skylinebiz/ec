@@ -2,6 +2,12 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [4.4.0] - 2026-10-21
+
+### Changed
+
+- **Barcode Print: Price from the selected Price List** — the label price no longer defaults to the MRP price list. A new mandatory **Price List** field on Barcode Print sets which list the **Price** column (formerly MRP) is taken from, whether items are added by hand or with Get Items From. Changing the Price List re-prices every row. The field behind the column is still `mrp`, so existing print formats keep working. Requires `bench migrate`; Barcode Print documents saved before this need a Price List chosen before they can be saved again.
+
 ## [4.3.0] - 2026-10-15
 
 ### Changed
