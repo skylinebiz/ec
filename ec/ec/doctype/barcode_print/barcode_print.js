@@ -80,6 +80,30 @@ frappe.ui.form.on("Barcode Print", {
 			.addClass("btn-primary");
 	},
 
+	price_list(frm) {
+
+		const rows = (frm.doc.items || []).filter((row) => row.item_code);
+
+		if (!frm.doc.price_list || !rows.length) return;
+
+		// re-price every row from the newly selected Price List
+		return frappe.call({
+			method: "ec.api.barcode_print.get_item_label_details",
+			args: {
+				item_codes: rows.map((row) => row.item_code),
+				price_list: frm.doc.price_list,
+			},
+		}).then((r) => {
+			const details = r.message || {};
+
+			rows.forEach((row) => {
+				row.mrp = flt((details[row.item_code] || {}).mrp);
+			});
+
+			frm.refresh_field("items");
+		});
+	},
+
 	printer(frm) {
 
 		if (frm.doc.printer) {
@@ -107,6 +131,7 @@ frappe.ui.form.on("Barcode Print Item", {
 			method: "ec.api.barcode_print.get_item_label_details",
 			args: {
 				item_codes: [row.item_code],
+				price_list: frm.doc.price_list,
 			},
 		}).then((r) => {
 			const details = (r.message || {})[row.item_code];
@@ -157,6 +182,7 @@ function get_items_from(frm, source) {
 				args: {
 					source_doctype: source.source_doctype,
 					source_names: selections,
+					price_list: frm.doc.price_list,
 				},
 				freeze: true,
 				freeze_message: __("Fetching items..."),
