@@ -29,7 +29,7 @@ ITEM_SOURCES = {
 }
 
 
-def get_label_details(item_codes):
+def get_label_details(item_codes, price_list=None):
 
     item_codes = list({item_code for item_code in item_codes if item_code})
 
@@ -80,27 +80,31 @@ def get_label_details(item_codes):
         if barcode.parent in details and not details[barcode.parent]["barcode"]:
             details[barcode.parent]["barcode"] = barcode.barcode
 
-    for price in frappe.get_all(
-        "Item Price",
-        filters={"item_code": ["in", item_codes], "price_list": "MRP"},
-        fields=["item_code", "price_list_rate"],
-    ):
-        if price.item_code in details:
-            details[price.item_code]["mrp"] = flt(price.price_list_rate)
+    # "mrp" is the label's Price field; it holds the rate from the chosen
+    # Price List (0 until one is chosen)
+    if price_list:
+        for price in frappe.get_all(
+            "Item Price",
+            filters={"item_code": ["in", item_codes], "price_list": price_list},
+            fields=["item_code", "price_list_rate"],
+            order_by="valid_from asc, creation asc",
+        ):
+            if price.item_code in details:
+                details[price.item_code]["mrp"] = flt(price.price_list_rate)
 
     return details
 
 
 @frappe.whitelist()
-def get_item_label_details(item_codes):
+def get_item_label_details(item_codes, price_list=None):
 
     frappe.has_permission("Item", "read", throw=True)
 
-    return get_label_details(frappe.parse_json(item_codes))
+    return get_label_details(frappe.parse_json(item_codes), price_list)
 
 
 @frappe.whitelist()
-def get_items_from(source_doctype, source_names):
+def get_items_from(source_doctype, source_names, price_list=None):
 
     source = ITEM_SOURCES.get(source_doctype)
 
@@ -149,7 +153,7 @@ def get_items_from(source_doctype, source_names):
         group = row.get(group_field) if group_field else None
         groups[group] = groups.get(group, 0) + flt(row.get(qty_field))
 
-    details = get_label_details([item_code for _parent, item_code in grouped])
+    details = get_label_details([item_code for _parent, item_code in grouped], price_list)
 
     result = []
 

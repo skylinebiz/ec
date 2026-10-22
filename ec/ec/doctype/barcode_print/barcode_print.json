@@ -6,6 +6,7 @@
  "engine": "InnoDB",
  "field_order": [
   "posting_date",
+  "price_list",
   "column_break_hdr1",
   "print_format",
   "column_break_hdr2",
@@ -28,6 +29,13 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "label": "Price List",
+   "options": "Price List",
    "reqd": 1
   },
   {
@@ -111,7 +119,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-09 17:00:00.000000",
+ "modified": "2026-10-21 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "EC",
  "name": "Barcode Print",
