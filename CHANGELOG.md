@@ -2,6 +2,12 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [4.5.0] - 2026-11-03
+
+### Added
+
+- **App icon** — the app now has its own icon (an "EC" tile, `ec-logo.svg`) on the Apps screen, set through `app_logo_url` / `add_to_apps_screen` in `hooks.py`.
+
 ## [4.4.0] - 2026-10-21
 
 ### Changed
