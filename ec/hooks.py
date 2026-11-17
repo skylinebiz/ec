@@ -4,6 +4,17 @@ app_publisher = "harshit@skylinebiz.in"
 app_description = "EC App"
 app_email = "harshit@skylinebiz.in"
 app_license = "mit"
+app_home = "/desk/item-definition"
+app_logo_url = "/assets/ec/images/ec-logo.svg"
+
+add_to_apps_screen = [
+    {
+        "name": app_name,
+        "logo": app_logo_url,
+        "title": app_title,
+        "route": app_home,
+    }
+]
 
 # Apps
 # ------------------
