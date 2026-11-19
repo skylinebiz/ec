@@ -5,7 +5,7 @@ app_description = "EC App"
 app_email = "harshit@skylinebiz.in"
 app_license = "mit"
 app_home = "/desk/item-definition"
-app_logo_url = "/assets/ec/images/ec-logo.svg"
+app_logo_url = "/assets/ec/images/ec-logo.png"
 
 add_to_apps_screen = [
     {
