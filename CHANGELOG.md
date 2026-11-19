@@ -2,6 +2,12 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [4.5.1] - 2026-11-19
+
+### Changed
+
+- **App icon** — replaced the grey "EC" text tile with EC Logo.
+
 ## [4.5.0] - 2026-11-03
 
 ### Added
