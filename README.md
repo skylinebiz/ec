@@ -35,6 +35,7 @@ A "Type" field on Delivery Note (Adhoc / Against (FIFO) / Against (LIFO)) that:
 
 - **Adhoc** — blocks saving if any row still references a Sales Order.
 - **Against (FIFO) / (LIFO)** — groups rows by item, then auto-splits and allocates each item's total quantity against pending Sales Orders in oldest-first (FIFO) or newest-first (LIFO) order, throwing a clear error if there isn't enough pending Sales Order quantity to cover it.
+- **From a Pick List** — the Type follows the rows instead: ERPNext makes one Delivery Note for the rows picked against a Sales Order (set to Against (FIFO), Sales Order references kept as picked) and one for the rest (set to Adhoc).
 
 #### Delivery Note Return
 

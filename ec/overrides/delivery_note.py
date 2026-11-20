@@ -3,6 +3,10 @@ from frappe.utils import flt
 
 
 def before_save(doc, method=None):
+    if any(row.against_pick_list for row in doc.items):
+        set_pick_list_type(doc)
+        return
+
     delivery_type = doc.get("custom_ec_type")
 
     if not delivery_type:
@@ -13,6 +17,20 @@ def before_save(doc, method=None):
 
     elif delivery_type in ("Against (FIFO)", "Against (LIFO)"):
         set_sales_order_references(doc, delivery_type)
+
+
+def set_pick_list_type(doc):
+    """
+    A Delivery Note made from a Pick List keeps the Sales Order rows the
+    Pick List was picked against - ERPNext makes one Delivery Note for the
+    rows with a Sales Order and another (Adhoc) for the rest. Re-allocating
+    them FIFO/LIFO would merge rows and lose their Pick List row link, so
+    the Type only follows the rows.
+    """
+    if any(row.against_sales_order for row in doc.items):
+        doc.custom_ec_type = "Against (FIFO)"
+    else:
+        doc.custom_ec_type = "Adhoc"
 
 
 def validate_adhoc_items(doc):
