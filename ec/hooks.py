@@ -74,6 +74,7 @@ doctype_list_js = {
 doctype_js = {
     "Item": "public/js/item.js",
     "BOM": "public/js/bom.js",
+    "Delivery Note": "public/js/delivery_note_form.js",
 }
 
 
