@@ -2,6 +2,17 @@
 
 All notable changes to the EC app are documented in this file.
 
+## [5.0.0] - 2026-11-23
+
+### Added
+
+- **Ordered Dispatch page** (`/app/ordered-dispatch`, for Stock and Sales Users / Managers) — pick a **Customer** and a **Warehouse Group** to see every style + colour the customer still has open on a Sales Order, one row each, with a cell per size showing **Order | Stock | Other Orders | Allocated**. Sizes the customer did not order are shown too, with their stock. Click a cell to allocate 1 more (right-click to remove 1), then **Save Pick List**: the allocation goes on the customer's draft Pick List, spread over their open Sales Order rows by oldest delivery date first; whatever is more than ordered goes on a row without a Sales Order. Qty no warehouse can supply is left off and reported. Submitted Pick Lists stay with the picker and cannot be allocated below what they picked. **Cancel Allocation** deletes the draft and cancels submitted Pick Lists with nothing delivered yet; **Export CSV** downloads the grid.
+- **Delivery Note: Link Pick List** — a button on draft Delivery Notes made by hand that links their rows to what the customer's open Pick Lists have picked and not delivered yet (oldest Pick List first, less what other draft Delivery Notes already link). Rows are split where they cover more than one Pick List row; qty no Pick List covers stays on an unlinked row. Linked rows take the Pick List row's warehouse and Sales Order, so on submit the Pick List shows them delivered and Ordered Dispatch no longer counts them as allocated. Batch and serial-number items are not linked.
+
+### Fixed
+
+- **Delivery Note from a Pick List** — creating Delivery Notes from a Pick List that has rows both with and without a Sales Order failed with "Adhoc Delivery Note cannot contain Sales Order references", because the Type field defaulted to Adhoc on both. The Type now follows the rows for Delivery Notes linked to a Pick List: **Against (FIFO)** when any row is against a Sales Order (keeping the Pick List's references, without FIFO/LIFO re-allocation), **Adhoc** otherwise.
+
 ## [4.5.1] - 2026-11-19
 
 ### Changed
